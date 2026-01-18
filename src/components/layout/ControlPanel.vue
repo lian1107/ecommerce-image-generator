@@ -1,3 +1,6 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+
 interface Props {
   width?: string
 }
@@ -5,6 +8,8 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   width: '380px'
 })
+
+const isCollapsed = ref(false)
 
 const toggle = () => {
   isCollapsed.value = !isCollapsed.value
