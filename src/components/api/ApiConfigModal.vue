@@ -2,10 +2,11 @@
 import BaseModal from '@/components/common/BaseModal.vue'
 import ApiConfigSection from '@/components/api/ApiConfigSection.vue'
 
-defineProps<{
-  show: boolean
+withDefaults(defineProps<{
   modelValue?: boolean
-}>()
+}>(), {
+  modelValue: false
+})
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'close': []
