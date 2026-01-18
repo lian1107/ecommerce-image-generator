@@ -2,11 +2,10 @@
 import BaseModal from '@/components/common/BaseModal.vue'
 import ApiConfigSection from '@/components/api/ApiConfigSection.vue'
 
-interface Props {
-  modelValue: boolean
-}
-
-const props = defineProps<Props>()
+const props = defineProps<{
+  show: boolean
+  modelValue?: boolean
+}>()
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'close': []

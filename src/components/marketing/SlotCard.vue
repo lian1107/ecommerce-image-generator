@@ -6,9 +6,15 @@ const props = defineProps<{
   slotData: MarketingSlot
 }>()
 
-const emit = defineEmits<{
-  (e: 'update:focus', value: string): void
-  (e: 'update:description', value: string): void
+// Emits are used directly in template via $emit
+// defineEmits is macro, so we don't need to assign it if not used in script
+// Emits definitions
+defineEmits<{
+  'update': [slot: MarketingSlot]
+  'generate': [slot: MarketingSlot]
+  'use-consistency': []
+  'update:focus': [value: string]
+  'update:description': [value: string]
 }>()
 
 const placeholderText = computed(() => {
