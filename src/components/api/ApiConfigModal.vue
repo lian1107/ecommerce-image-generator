@@ -2,7 +2,7 @@
 import BaseModal from '@/components/common/BaseModal.vue'
 import ApiConfigSection from '@/components/api/ApiConfigSection.vue'
 
-const props = defineProps<{
+defineProps<{
   show: boolean
   modelValue?: boolean
 }>()
