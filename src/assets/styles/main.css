@@ -1,0 +1,263 @@
+/* ===========================================
+   电商智能生图系统 - 主样式文件 (Warm Minimalist Theme)
+   =========================================== */
+
+/* 引入字体 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap');
+
+/* CSS 变量定义 */
+:root {
+  /* 主色调 (Warm Terracotta & Charcoal) */
+  --color-primary: #da7756;
+  --color-primary-light: rgba(218, 119, 86, 0.1);
+  --color-primary-dark: #b85d3f;
+  --color-accent: #2d2a26; /* Deep Charcoal for strong actions */
+
+  /* 次要颜色 */
+  --color-secondary: #6e6962;
+  --color-secondary-dark: #4a4642;
+
+  /* 状态颜色 (Muted) */
+  --color-success: #3f624e;
+  --color-success-bg: #e6f0eb;
+  --color-success-border: #bcd4c7;
+  --color-success-text: #2c4a38;
+
+  --color-warning: #9e7b26;
+  --color-warning-bg: #f9f5e6;
+  --color-warning-border: #e8dcb8;
+  --color-warning-text: #705516;
+
+  --color-danger: #a33b3b;
+  --color-danger-dark: #822b2b;
+  --color-error-bg: #fbeaea;
+  --color-error-border: #dfb1b1;
+  --color-error-text: #782525;
+
+  --color-info-bg: #ebf1fa;
+  --color-info-border: #b8cbe8;
+  --color-info-text: #264b8a;
+
+  /* 文本颜色 */
+  --color-text: #3c3935; /* Soft Black */
+  --color-text-dark: #1a1918;
+  --color-text-muted: #858079;
+
+  /* 背景颜色 (Warm Paper) */
+  --color-bg: #fbf9f6; /* Claude-like paper background */
+  --color-bg-card: #ffffff; /* Clean white cards */
+  --color-bg-secondary: #f0ede8;
+  --color-bg-hover: #f2f0eb;
+  --color-bg-input: #ffffff;
+
+  /* 边框颜色 */
+  --color-border: #e6e4df;
+  --color-border-light: #f0ede8;
+
+  /* 圆角 (Refined) */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  /* 阴影 (Subtle, non-digital) */
+  --shadow-sm: 0 1px 2px 0 rgba(60, 57, 53, 0.04);
+  --shadow-md: 0 4px 12px -2px rgba(60, 57, 53, 0.08);
+  --shadow-lg: 0 12px 24px -4px rgba(60, 57, 53, 0.12);
+
+  /* 过渡 */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* 字体 */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Merriweather', Georgia, serif; /* New serif font */
+  --font-mono: 'SF Mono', Monaco, monospace;
+}
+
+/* 深色主题 (Warm Dark) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #e6e4df;
+    --color-text-dark: #fbf9f6;
+    --color-text-muted: #9e9a94;
+
+    --color-bg: #1c1b1a; /* Warm black */
+    --color-bg-card: #282624;
+    --color-bg-secondary: #33302e;
+    --color-bg-hover: #33302e;
+    --color-bg-input: #282624;
+
+    --color-border: #3d3a36;
+    --color-border-light: #4a4642;
+
+    --color-primary-light: rgba(218, 119, 86, 0.2);
+  }
+}
+
+/* 全局重置 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 0.95rem; /* Slightly smaller, more refined */
+  line-height: 1.6;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+}
+
+/* Typography Overrides */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  color: var(--color-text-dark);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+
+/* 链接 */
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+/* 按钮重置 */
+button {
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
+/* 输入框重置 */
+input,
+textarea,
+select {
+  font-family: var(--font-sans);
+  font-size: inherit;
+  color: var(--color-text);
+}
+
+/* 图片 */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 列表 */
+ul,
+ol {
+  list-style: none;
+}
+
+/* 滚动条样式 (Thinner, cleaner) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.2);
+}
+
+/* 选中文本 */
+::selection {
+  background-color: rgba(218, 119, 86, 0.2);
+  color: var(--color-primary-dark);
+}
+
+/* 焦点样式 */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 工具类 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Vue 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-normal);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 布局工具类 */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+
+/* 应用容器 */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
