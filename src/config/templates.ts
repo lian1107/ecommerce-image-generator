@@ -1,4 +1,4 @@
-import type { Template, SceneType, GenerationSettings } from '@/types'
+import type { Template, SceneType } from '@/types'
 
 export const templates: Template[] = [
   {

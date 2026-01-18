@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Scene, SceneType } from '@/types'
-import { scenes, sceneList, getSceneById } from '@/config/scenes'
+import { sceneList, getSceneById } from '@/config/scenes'
 import { semanticEngine } from '@/services/semanticEngine'
 import { useProductStore } from './productStore'
 

@@ -230,7 +230,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 }, {
   persist: {
-    key: `${APP_CONFIG.storage.prefix}-${APP_CONFIG.storage.keys.settings}`,
-    pick: ['settings', 'advancedOptions']
+    key: 'ecommerce-image-gen-settings',
+    paths: ['settings', 'advancedOptions']
   }
 })

@@ -1,5 +1,5 @@
 import type { SemanticMatch, SceneType, ProductInfo } from '@/types'
-import { categories, getCategoryByKeyword } from '@/config/categories'
+import { getCategoryByKeyword } from '@/config/categories'
 import { scenes } from '@/config/scenes'
 
 // 语义关键词映射表

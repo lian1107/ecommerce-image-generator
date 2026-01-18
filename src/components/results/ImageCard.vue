@@ -8,17 +8,18 @@ interface Props {
   showActions?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  selected: false,
-  showActions: true
-})
-
 const emit = defineEmits<{
   select: [result: GenerationResult]
   download: [result: GenerationResult]
   remove: [result: GenerationResult]
   preview: [result: GenerationResult]
 }>()
+
+// Use direct props in template
+withDefaults(defineProps<Props>(), {
+  selected: false,
+  showActions: true
+})
 
 const isLoading = ref(true)
 const hasError = ref(false)

@@ -146,7 +146,6 @@ export const useGenerationStore = defineStore('generation', () => {
   }
 
   const startGeneration = async (): Promise<boolean> => {
-    const apiStore = useApiStore()
     const productStore = useProductStore()
     const settingsStore = useSettingsStore()
     const sceneStore = useSceneStore()

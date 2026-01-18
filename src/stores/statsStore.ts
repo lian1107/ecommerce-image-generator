@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { UsageStats, SceneType } from '@/types'
-import { APP_CONFIG } from '@/config'
 
 export const useStatsStore = defineStore('stats', () => {
   // State
@@ -220,7 +219,7 @@ export const useStatsStore = defineStore('stats', () => {
   }
 }, {
   persist: {
-    key: `${APP_CONFIG.storage.prefix}-${APP_CONFIG.storage.keys.stats}`,
-    pick: ['stats']
+    key: 'ecommerce-image-gen-stats',
+    paths: ['stats', 'recentActivity']
   }
 })
