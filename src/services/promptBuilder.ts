@@ -20,6 +20,8 @@ export enum PromptLayerType {
   STYLE = 'style',                          // 风格层
   QUALITY = 'quality',                      // 质量层
   SEMANTIC = 'semantic',                    // 语义增强层
+  MARKETING = 'marketing',                  // 营销策略层 (新增)
+  AIDA = 'aida',                            // AIDA 阶段层 (新增)
   DETAIL = 'detail',                        // 细节层
   NEGATIVE = 'negative'                     // 负面提示层
 }
@@ -35,6 +37,8 @@ const layerWeights: Record<PromptLayerType, number> = {
   [PromptLayerType.STYLE]: 1.1,
   [PromptLayerType.QUALITY]: 1.3,
   [PromptLayerType.SEMANTIC]: 0.9,
+  [PromptLayerType.MARKETING]: 1.25,       // 营销层权重
+  [PromptLayerType.AIDA]: 1.15,            // AIDA层权重
   [PromptLayerType.DETAIL]: 0.8,
   [PromptLayerType.NEGATIVE]: 1.0
 }
@@ -55,6 +59,8 @@ export class PromptBuilder {
   private modelPrompt: string = ''  // 模特提示词
   private fusionPrompt: string = '' // 融合提示词
   private consistencyPrompt: string = '' // 一致性提示词
+  private marketingPrompt: string = '' // 营销策略提示词
+  private aidaPrompt: string = '' // AIDA提示词
   private customLayers: Map<PromptLayerType, string> = new Map()
   private additionalPrompts: string[] = []
 
@@ -116,6 +122,16 @@ export class PromptBuilder {
     return this
   }
 
+  setMarketingPrompt(prompt: string): this {
+    this.marketingPrompt = prompt
+    return this
+  }
+
+  setAidaPrompt(prompt: string): this {
+    this.aidaPrompt = prompt
+    return this
+  }
+
   /**
    * 重置构建器
    */
@@ -124,6 +140,10 @@ export class PromptBuilder {
     this.scene = 'studio-white'
     this.settings = null
     this.modelPrompt = ''
+    this.fusionPrompt = ''
+    this.consistencyPrompt = ''
+    this.marketingPrompt = ''
+    this.aidaPrompt = ''
     this.customLayers.clear()
     this.additionalPrompts = []
     return this
@@ -345,6 +365,18 @@ export class PromptBuilder {
         content: this.customLayers.get(PromptLayerType.SEMANTIC) || this.buildSemanticLayer(),
         weight: layerWeights[PromptLayerType.SEMANTIC],
         enabled: true
+      },
+      {
+        name: PromptLayerType.MARKETING,
+        content: this.customLayers.get(PromptLayerType.MARKETING) || this.marketingPrompt,
+        weight: layerWeights[PromptLayerType.MARKETING],
+        enabled: this.marketingPrompt.length > 0
+      },
+      {
+        name: PromptLayerType.AIDA,
+        content: this.customLayers.get(PromptLayerType.AIDA) || this.aidaPrompt,
+        weight: layerWeights[PromptLayerType.AIDA],
+        enabled: this.aidaPrompt.length > 0
       },
       {
         name: PromptLayerType.DETAIL,

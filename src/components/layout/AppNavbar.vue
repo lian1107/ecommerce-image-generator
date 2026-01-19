@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useApiStore } from '@/stores/apiStore'
-import { useStatsStore } from '@/stores/statsStore'
 import BaseButton from '@/components/common/BaseButton.vue'
 
 const apiStore = useApiStore()
-const statsStore = useStatsStore()
+
+const props = defineProps<{
+  activeMode: 'quick' | 'advanced' | 'marketing'
+}>()
 
 const emit = defineEmits<{
-  'open-settings': []
+  'open-settings': [],
+  'switch-mode': [mode: 'landing' | 'quick' | 'advanced' | 'marketing']
 }>()
 
 const openSettings = () => {
-  console.log('Open Settings clicked')
   emit('open-settings')
 }
 
@@ -22,26 +24,34 @@ const connectionStatusClass = computed(() => ({
   'status-dot--loading': apiStore.connectionStatus.isLoading,
   'status-dot--error': apiStore.connectionStatus.error && !apiStore.connectionStatus.isLoading
 }))
+
+const navItems = [
+  { id: 'quick', label: '🚀 快速生成', tooltip: 'Quick Generation' },
+  { id: 'advanced', label: '✨ 高级生成', tooltip: 'Advanced Generation' },
+  { id: 'marketing', label: '📊 营销企划', tooltip: 'Marketing Planner' }
+] as const
 </script>
 
 <template>
   <nav class="navbar">
-    <div class="navbar__brand">
+    <div class="navbar__brand" @click="emit('switch-mode', 'landing')">
       <span class="navbar__logo">🎨</span>
       <h1 class="navbar__title">电商智能生图系统</h1>
     </div>
 
+    <!-- Center Navigation Tabs -->
     <div class="navbar__center">
-      <div class="navbar__stats">
-        <span class="navbar__stat">
-          <span class="navbar__stat-value">{{ statsStore.totalGenerations }}</span>
-          <span class="navbar__stat-label">总生成</span>
-        </span>
-        <span class="navbar__divider"></span>
-        <span class="navbar__stat">
-          <span class="navbar__stat-value">{{ statsStore.totalImages }}</span>
-          <span class="navbar__stat-label">总图片</span>
-        </span>
+      <div class="nav-tabs">
+        <button 
+          v-for="item in navItems"
+          :key="item.id"
+          class="nav-tab"
+          :class="{ active: activeMode === item.id }"
+          @click="emit('switch-mode', item.id)"
+          :title="item.tooltip"
+        >
+          {{ item.label }}
+        </button>
       </div>
     </div>
 
@@ -83,6 +93,8 @@ const connectionStatusClass = computed(() => ({
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 200px; /* Prevent shrinking */
+  cursor: pointer;
 }
 
 .navbar__logo {
@@ -95,54 +107,54 @@ const connectionStatusClass = computed(() => ({
   color: var(--color-text-dark);
   font-family: var(--font-serif);
   margin: 0;
+  white-space: nowrap;
 }
 
 .navbar__center {
   display: flex;
-  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 0 1rem;
 }
 
-.navbar__stats {
+.nav-tabs {
   display: flex;
-  align-items: center;
-  gap: 1.5rem;
   background: var(--color-bg-secondary);
-  padding: 0.5rem 1.25rem;
-  border-radius: var(--radius-full, 9999px);
-  border: 1px solid var(--color-border-light);
+  padding: 4px;
+  border-radius: 8px;
+  gap: 4px;
 }
 
-.navbar__stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  line-height: 1.2;
-}
-
-.navbar__stat-value {
-  font-size: 0.9375rem;
+.nav-tab {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 0.9rem;
   font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-tab:hover {
+  background: rgba(0,0,0,0.05);
   color: var(--color-primary);
 }
 
-.navbar__stat-label {
-  font-size: 0.6875rem;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.navbar__divider {
-  width: 1px;
-  height: 1.5rem;
-  background: var(--color-border);
+.nav-tab.active {
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .navbar__actions {
   display: flex;
   align-items: center;
   gap: 1rem;
+  min-width: 200px;
+  justify-content: flex-end;
 }
 
 .navbar__status {
@@ -187,13 +199,9 @@ const connectionStatusClass = computed(() => ({
   font-weight: 500;
 }
 
-@media (max-width: 768px) {
-  .navbar__center {
-    display: none;
-  }
-
+@media (max-width: 850px) {
   .navbar__title {
-    font-size: 1rem;
+      display: none;
   }
 }
 </style>

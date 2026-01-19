@@ -47,6 +47,17 @@ export interface GoogleResponse {
   }
 }
 
+export interface AnalyzeTextOptions {
+  systemPrompt?: string
+  userPrompt: string
+  images?: string[]
+}
+
+export interface VisionQAOptions {
+  image: string
+  prompt: string
+}
+
 export interface GenerateImageOptions {
   prompt: string
   referenceImages?: string[] // base64 encoded images
@@ -92,6 +103,9 @@ export class GeminiClient {
       return `${this.baseUrl}/chat/completions`
     }
     // Google Native
+    if (this.model.includes('gemini-pro-vision') || this.model.includes('gemini-3')) {
+      return `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`
+    }
     return `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`
   }
 
@@ -152,6 +166,102 @@ export class GeminiClient {
         success: false,
         message: error instanceof Error ? error.message : '网络连接失败'
       }
+    }
+  }
+
+  /**
+   * Analyze text/images for Agent Logic (Director, Planner)
+   */
+  async analyzeWithText(options: AnalyzeTextOptions): Promise<any> {
+    const { systemPrompt, userPrompt, images } = options
+
+    // Construct the prompt
+    let fullPrompt = userPrompt
+    if (systemPrompt) {
+      // For Gemini, system instructions are often passed as the first user message or specific system instruction
+      // Here we prepend it for simplicity
+      fullPrompt = `${systemPrompt}\n\nUser Input:\n${userPrompt}`
+    }
+
+    const payload: any = {
+      contents: [{
+        parts: [{ text: fullPrompt }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+      }
+    }
+
+    // Add images if present
+    if (images && images.length > 0) {
+      // Need to handle image attachment in Gemini Format
+      const parts = []
+      for (const img of images) {
+        const base64Data = img.replace(/^data:image\/\w+;base64,/, '')
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: base64Data
+          }
+        })
+      }
+      parts.push({ text: fullPrompt })
+      payload.contents[0].parts = parts
+    }
+
+    // Call API (Reuse Google generate logic mostly, but return text)
+    try {
+      const response = await fetch(this.getEndpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(err.error?.message || 'Text analysis failed')
+      }
+
+      const data = await response.json()
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+      // Attempt JSON Parse
+      try {
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[1] || jsonMatch[0])
+        }
+        return JSON.parse(text)
+      } catch (e) {
+        console.warn('Failed to parse JSON from AI response, returning raw text', text)
+        return text
+      }
+
+    } catch (error) {
+      console.error("Analysis Error:", error)
+      throw error
+    }
+  }
+
+  /**
+   * Vision QA Analysis
+   */
+  async analyzeImage(image: string, prompt: string): Promise<{ pass: boolean; reason: string }> {
+    try {
+      const result = await this.analyzeWithText({
+        userPrompt: prompt,
+        images: [image]
+      })
+
+      // Expected result is JSON: { pass: boolean, reason: string }
+      if (typeof result === 'object' && 'pass' in result) {
+        return result
+      }
+      return { pass: false, reason: "Invalid QA Response Format" }
+    } catch (e) {
+      return { pass: false, reason: "QA Service Failed" }
     }
   }
 

@@ -8,11 +8,13 @@ import { AppNavbar, ControlPanel, Workspace, InfoPanel } from '@/components/layo
 import ApiConfigModal from '@/components/api/ApiConfigModal.vue'
 import QuickPage from '@/components/pages/QuickPage.vue'
 import AdvancedPage from '@/components/pages/AdvancedPage.vue'
+import LandingPageV2 from '@/components/pages/LandingPageV2.vue'
 import GenerationSettings from '@/components/settings/GenerationSettings.vue'
 import PromptPreview from '@/components/prompt/PromptPreview.vue'
 import ResultsGrid from '@/components/results/ResultsGrid.vue'
 import HistoryList from '@/components/history/HistoryList.vue'
 import StatsPanel from '@/components/stats/StatsPanel.vue'
+import { MarketingWorkflowPage } from '@/components/marketing-workflow'
 
 // Common components
 import { BaseButton, BaseToast } from '@/components/common'
@@ -33,155 +35,143 @@ const { buildPrompt } = usePromptBuilder()
 
 const isGenerating = ref(false)
 const showSettingsModal = ref(false)
-const currentMode = ref<'quick' | 'advanced'>('quick')
+const currentMode = ref<'landing' | 'quick' | 'advanced' | 'marketing'>('landing')
 
-const switchMode = (mode: 'quick' | 'advanced') => {
-  currentMode.value = mode
-  // 切换模式时自动控制融合功能的启用状态
-  if (mode === 'quick') {
-    fusionStore.setEnabled(false)
-  }
+const switchMode = (mode: 'landing' | 'quick' | 'advanced' | 'marketing') => {
+    currentMode.value = mode
+    // 切换模式时自动控制融合功能的启用状态
+    if (mode === 'quick') {
+        fusionStore.setEnabled(false)
+    }
 }
 
 const handleStartGeneration = async () => {
-  if (!apiStore.isConfigured) {
-    showSettingsModal.value = true
-    toast.warning('Please configure API Key first')
-    return
-  }
-
-  if (!apiStore.connectionStatus.isConnected) {
-    showSettingsModal.value = true
-    toast.warning('Please test API connection first')
-    return
-  }
-
-  // Build prompt before generation
-  buildPrompt()
-
-  isGenerating.value = true
-
-  try {
-    const success = await generationStore.startGeneration()
-
-    if (success) {
-      toast.success(`Successfully generated ${generationStore.resultCount} images`)
-    } else {
-      toast.error('Generation failed')
+    // ... existing logic ...
+    if (!apiStore.isConfigured) {
+        showSettingsModal.value = true
+        toast.warning('Please configure API Key first')
+        return
     }
-  } catch (error) {
-    toast.error(error instanceof Error ? error.message : 'Generation Error')
-  } finally {
-    isGenerating.value = false
-  }
+
+    if (!apiStore.connectionStatus.isConnected) {
+        showSettingsModal.value = true
+        toast.warning('Please test API connection first')
+        return
+    }
+
+    // Build prompt before generation
+    buildPrompt()
+
+    isGenerating.value = true
+
+    try {
+        const success = await generationStore.startGeneration()
+
+        if (success) {
+            toast.success(`Successfully generated ${generationStore.resultCount} images`)
+        } else {
+            toast.error('Generation failed')
+        }
+    } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Generation Error')
+    } finally {
+        isGenerating.value = false
+    }
 }
 
 onMounted(() => {
-  historyStore.checkAndCleanup()
+    historyStore.checkAndCleanup()
 
-  if (apiStore.isConfigured && !apiStore.connectionStatus.isConnected) {
-    apiStore.testConnection()
-  }
+    if (apiStore.isConfigured && !apiStore.connectionStatus.isConnected) {
+        apiStore.testConnection()
+    }
 })
 </script>
 
 <template>
-  <div class="app">
-    <AppNavbar @open-settings="showSettingsModal = true" />
+    <div class="app">
+        <!-- View 1: Landing Portal (Full Screen) -->
+        <LandingPageV2 
+            v-if="currentMode === 'landing'" 
+            @enter="switchMode('quick')" 
+        />
 
-    <div class="app__main">
-      <ControlPanel width="320px">
-        <!-- ApiConfigSection removed from here -->
-        <GenerationSettings />
-      </ControlPanel>
+        <!-- View 2: App Workspace (Standard UI) -->
+        <div v-else class="app-layout">
+            <AppNavbar 
+                :active-mode="currentMode" 
+                @switch-mode="switchMode"
+                @open-settings="showSettingsModal = true" 
+            />
 
-      <Workspace>
-        <!-- Creation Card (Center Input Area) -->
-        <div class="creation-card">
-          <!-- Mode Tabs -->
-          <div class="mode-tabs">
-            <button 
-              class="mode-tab" 
-              :class="{ active: currentMode === 'quick' }"
-              @click="switchMode('quick')"
-            >
-              🚀 快速生成
-            </button>
-            <button 
-              class="mode-tab" 
-              :class="{ active: currentMode === 'advanced' }"
-              @click="switchMode('advanced')"
-            >
-              ✨ 高级生成
-            </button>
-          </div>
+            <div class="app__main">
+                <ControlPanel width="320px">
+                    <!-- ApiConfigSection removed from here -->
+                    <GenerationSettings />
+                </ControlPanel>
 
-          <!-- Page Content -->
-          <div class="page-content">
-            <QuickPage v-show="currentMode === 'quick'" />
-            <AdvancedPage v-if="currentMode === 'advanced'" />
-          </div>
+                <Workspace>
+                    <!-- Creation Card (Center Input Area) -->
+                    <div class="creation-card">
+                        <!-- Page Content -->
+                        <div class="page-content">
+                            <QuickPage v-show="currentMode === 'quick'" />
+                            <AdvancedPage v-if="currentMode === 'advanced'" />
+                            <MarketingWorkflowPage v-if="currentMode === 'marketing'" />
+                        </div>
 
-          <!-- Shared Footer -->
-          <div class="creation-footer">
-            <PromptPreview />
-            
-            <div class="action-bar">
-              <div class="action-hints">
-                 <p v-if="!apiStore.isConfigured" class="app__generate-hint warning clickable" @click="showSettingsModal = true">
-                  ⚠️ Configure API Key
-                </p>
-                <p v-else-if="!apiStore.connectionStatus.isConnected" class="app__generate-hint warning clickable" @click="showSettingsModal = true">
-                  ⚠️ Test Connection
-                </p>
-              </div>
+                        <!-- Shared Footer -->
+                        <div class="creation-footer" v-if="currentMode !== 'marketing'">
+                            <PromptPreview />
 
-              <BaseButton
-                variant="primary"
-                size="lg"
-                class="generate-btn"
-                :loading="generationStore.isGenerating"
-                :disabled="!generationStore.canGenerate"
-                @click="handleStartGeneration"
-              >
-                {{ generationStore.isGenerating ? 'Generating...' : 'Generate Images' }}
-              </BaseButton>
+                            <div class="action-bar">
+                                <div class="action-hints">
+                                    <p v-if="!apiStore.isConfigured" class="app__generate-hint warning clickable"
+                                        @click="showSettingsModal = true">
+                                        ⚠️ Configure API Key
+                                    </p>
+                                    <p v-else-if="!apiStore.connectionStatus.isConnected"
+                                        class="app__generate-hint warning clickable" @click="showSettingsModal = true">
+                                        ⚠️ Test Connection
+                                    </p>
+                                </div>
+
+                                <BaseButton variant="primary" size="lg" class="generate-btn"
+                                    :loading="generationStore.isGenerating" :disabled="!generationStore.canGenerate"
+                                    @click="handleStartGeneration">
+                                    {{ generationStore.isGenerating ? 'Generating...' : 'Generate Images' }}
+                                </BaseButton>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results are now below the inputs -->
+                    <div class="results-section">
+                        <h3 class="section-title">Generation Results</h3>
+                        <ResultsGrid />
+                    </div>
+                </Workspace>
+
+                <InfoPanel width="320px" :default-collapsed="false">
+                    <HistoryList />
+                    <StatsPanel />
+                </InfoPanel>
             </div>
-          </div>
         </div>
 
-        <!-- Results are now below the inputs -->
-        <div class="results-section">
-          <h3 class="section-title">Generation Results</h3>
-          <ResultsGrid />
-        </div>
-      </Workspace>
+        <!-- Modals -->
+        <ApiConfigModal v-model="showSettingsModal" />
 
-      <InfoPanel width="320px" :default-collapsed="false">
-        <HistoryList />
-        <StatsPanel />
-      </InfoPanel>
+        <!-- Toast Container -->
+        <Teleport to="body">
+            <div class="toast-container">
+                <TransitionGroup name="toast">
+                    <BaseToast v-for="t in toast.toasts.value" :key="t.id" :type="t.type" :message="t.message"
+                        :dismissible="t.dismissible" @dismiss="toast.dismiss(t.id)" />
+                </TransitionGroup>
+            </div>
+        </Teleport>
     </div>
-
-    <!-- Modals -->
-    <ApiConfigModal v-model="showSettingsModal" />
-
-    <!-- Toast Container -->
-    <Teleport to="body">
-      <div class="toast-container">
-        <TransitionGroup name="toast">
-          <BaseToast
-            v-for="t in toast.toasts.value"
-            :key="t.id"
-            :type="t.type"
-            :message="t.message"
-            :dismissible="t.dismissible"
-            @dismiss="toast.dismiss(t.id)"
-          />
-        </TransitionGroup>
-      </div>
-    </Teleport>
-  </div>
 </template>
 
 <style scoped>
@@ -189,6 +179,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+}
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
 }
 
