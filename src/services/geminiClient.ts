@@ -153,10 +153,6 @@ export class GeminiClient {
     return `${this.baseUrl}/models/${normalized}:generateContent?key=${this.apiKey}`
   }
 
-  // Deprecated: Internal use only, relies on shared state
-  private getEndpoint(): string {
-    return this.getEndpointForModel(this.model)
-  }
 
   async testConnection(): Promise<{ success: boolean; message: string; model?: string }> {
     if (!this.apiKey) {

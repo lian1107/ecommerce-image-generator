@@ -38,8 +38,6 @@ export function useLazyImage(
   options: LazyImageOptions = {}
 ): LazyImageState {
   const {
-    rootMargin = '50px',
-    threshold = 0.01,
     placeholder = '',
     fallback = ''
   } = options
@@ -80,34 +78,7 @@ export function useLazyImage(
     img.src = srcValue.value
   }
 
-  const setupObserver = (el: HTMLElement) => {
-    if (!('IntersectionObserver' in window)) {
-      // 不支持 IntersectionObserver，直接加载
-      loadImage()
-      return
-    }
 
-    observer.value = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            loadImage()
-            // 加载后取消观察
-            if (observer.value && imageRef.value) {
-              observer.value.unobserve(imageRef.value)
-            }
-          }
-        })
-      },
-      {
-        rootMargin,
-        threshold
-      }
-    )
-
-    imageRef.value = el as HTMLImageElement
-    observer.value.observe(el)
-  }
 
   const cleanup = () => {
     if (observer.value && imageRef.value) {
@@ -187,8 +158,8 @@ export const lazyImageDirective = {
 
     observer.observe(el)
 
-    // 保存 observer 以便清理
-    ;(el as any).__lazyObserver__ = observer
+      // 保存 observer 以便清理
+      ; (el as any).__lazyObserver__ = observer
   },
 
   unmounted(el: HTMLImageElement) {

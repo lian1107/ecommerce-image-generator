@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+
 import luxuryImg from '@/assets/demo/luxury.png'
 import sneakerImg from '@/assets/demo/sneaker.png'
 import coffeeImg from '@/assets/demo/coffee.png'
@@ -30,7 +30,7 @@ const scrollToSection = (id: string) => {
         <div class="actions fade-in-up delay-2">
           <BaseButton 
             variant="primary" 
-            size="xl" 
+            size="lg" 
             class="cta-btn glow"
             @click="$emit('enter')"
           >
@@ -108,7 +108,7 @@ const scrollToSection = (id: string) => {
         <p>加入智能电商营销的新时代。</p>
         <BaseButton 
             variant="primary" 
-            size="xl" 
+            size="lg" 
             class="cta-btn glow"
             @click="$emit('enter')"
           >
@@ -177,6 +177,7 @@ const scrollToSection = (id: string) => {
 .gradient-text {
   /* Warm Gold/Orange Gradient for "Reimagine" */
   background: linear-gradient(135deg, #F6D365 0%, #FDA085 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }

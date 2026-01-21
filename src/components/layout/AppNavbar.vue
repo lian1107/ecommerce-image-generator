@@ -5,7 +5,7 @@ import BaseButton from '@/components/common/BaseButton.vue'
 
 const apiStore = useApiStore()
 
-const props = defineProps<{
+defineProps<{
   activeMode: 'quick' | 'advanced' | 'marketing'
 }>()
 

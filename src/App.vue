@@ -39,8 +39,8 @@ const showSettingsModal = ref(false)
 const currentMode = ref<'landing' | 'quick' | 'advanced' | 'marketing'>('landing')
 
 // Mobile state
-const { isMobile, isTablet } = useIsMobile()
-const { controlPanelOpen, infoPanelOpen, toggleControlPanel, toggleInfoPanel, closeAllPanels } = useMobilePanels()
+const { isMobile } = useIsMobile()
+const { controlPanelOpen, infoPanelOpen, toggleControlPanel, toggleInfoPanel } = useMobilePanels()
 const mobileMenuOpen = ref(false)
 
 const switchMode = (mode: 'landing' | 'quick' | 'advanced' | 'marketing') => {

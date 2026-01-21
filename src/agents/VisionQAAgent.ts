@@ -65,7 +65,7 @@ Output JSON ONLY in this exact format:
 
             if (!parseResult.success) {
                 // If validation fails, create a fallback response
-                const errorMsg = parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
+                const errorMsg = parseResult.error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join('; ')
                 this.logThought(`Validation failed: ${errorMsg}. Using fallback.`)
 
                 // Attempt to extract partial data
