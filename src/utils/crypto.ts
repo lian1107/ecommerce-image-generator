@@ -245,7 +245,7 @@ export class ApiKeyStorage {
   private isPrivateDevice(): boolean {
     // 简单的启发式检测
     // 检查是否有持久化存储权限
-    if (navigator.storage && navigator.storage.estimate) {
+    if (navigator.storage && typeof navigator.storage.estimate === 'function') {
       return true
     }
     // 检查是否在隐私模式

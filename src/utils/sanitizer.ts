@@ -135,7 +135,7 @@ export function sanitizeObject<T extends Record<string, any>>(
 ): T {
   const {
     escapeHtml: shouldEscapeHtml = true,
-    sanitizeUrls: shouldSanitizeUrls = true,
+    sanitizeUrls: _shouldSanitizeUrls = true,
     maxDepth = 10
   } = options
 
