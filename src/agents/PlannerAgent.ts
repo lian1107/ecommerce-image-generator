@@ -2,6 +2,7 @@ import { BaseAgent, type AgentContext, type AgentResult } from './core/BaseAgent
 import { geminiClient } from '@/services/geminiClient'
 import { CONTENT_PLANNER_SYSTEM_PROMPT } from '@/prompts/marketingPrompts'
 import type { ContentPlan } from '@/stores/marketingWorkflowStore'
+import { ContentPlanSchema, validateAgentResponse } from '@/schemas/agentSchemas'
 
 export class PlannerAgent extends BaseAgent {
     constructor() {
@@ -33,16 +34,20 @@ Requirements:
                 userPrompt: input
             })
 
-            this.logThought("Content plan generated. Parsing structure...")
+            this.logThought("Content plan generated. Validating structure...")
 
-            // Basic Validation
-            if (!result.items || !Array.isArray(result.items)) {
-                throw new Error("Invalid Content Plan format")
+            // Deep validation with Zod schema
+            const validation = validateAgentResponse(ContentPlanSchema, result, 'Planner')
+
+            if (!validation.success) {
+                throw new Error(validation.error)
             }
+
+            this.logThought(`Validation passed. Plan contains ${validation.data.items.length} items.`)
 
             return {
                 success: true,
-                data: result as ContentPlan
+                data: validation.data as ContentPlan
             }
 
         } catch (error: any) {

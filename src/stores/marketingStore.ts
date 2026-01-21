@@ -178,9 +178,21 @@ export const useMarketingStore = defineStore('marketing', () => {
                 const fullPrompt = builder.buildPrompt()
 
                 // Prepare reference images
-                const referenceImages = consistencyStore.isEnabled
-                    ? consistencyStore.config.referenceImages.map(img => img.preview)
-                    : undefined
+                // [FIX] Always include the primary product image for color/subject consistency
+                const allReferenceImages: string[] = []
+
+                // 1. Add the primary product image (critical for color accuracy)
+                if (productStore.primaryImage?.preview) {
+                    allReferenceImages.push(productStore.primaryImage.preview)
+                }
+
+                // 2. Add consistency store images if enabled
+                if (consistencyStore.isEnabled) {
+                    const consistencyImages = consistencyStore.config.referenceImages.map(img => img.preview)
+                    allReferenceImages.push(...consistencyImages)
+                }
+
+                const referenceImages = allReferenceImages.length > 0 ? allReferenceImages : undefined
 
                 // Generate
                 try {

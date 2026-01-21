@@ -1,6 +1,7 @@
 import type { SemanticMatch, SceneType, ProductInfo } from '@/types'
 import { getCategoryByKeyword } from '@/config/categories'
 import { scenes } from '@/config/scenes'
+import { materialAnalyzer } from './materialAnalyzer'
 
 // 语义关键词映射表
 const semanticMappings: Record<string, {
@@ -210,9 +211,23 @@ export class SemanticEngine {
   }
 
   /**
-   * 生成语义增强的提示词片段
+   * 使用 AI 分析产品图片的材质特征
    */
-  generateSemanticEnhancements(productInfo: ProductInfo): string[] {
+  async generateAIMaterialEnhancements(imageDataUrl: string): Promise<string[]> {
+    try {
+      const analysis = await materialAnalyzer.analyze(imageDataUrl)
+      return analysis.suggestedPrompts
+    } catch (error) {
+      console.warn('Material analysis failed, falling back to category enhancements')
+      return []
+    }
+  }
+
+  /**
+   * 生成语义增强的提示词片段
+   * @param materialPrompts - 可选的 AI 分析材质提示词
+   */
+  generateSemanticEnhancements(productInfo: ProductInfo, materialPrompts?: string[]): string[] {
     const matches = this.analyzeProduct(productInfo)
     const enhancements: string[] = []
 
@@ -221,10 +236,16 @@ export class SemanticEngine {
       enhancements.push(...match.suggestions)
     }
 
-    // 根据产品类别添加增强
-    const category = getCategoryByKeyword(productInfo.category)
-    if (category) {
-      enhancements.push(...category.promptEnhancements.slice(0, 3))
+    // 优先使用 AI 分析的材质增强词
+    if (materialPrompts && materialPrompts.length > 0) {
+      enhancements.push(...materialPrompts)
+    } else {
+      // 只有在没有 AI 分析结果时，才使用分类默认增强词
+      // 这解决了"数码产品都会出现金属表面"的问题
+      const category = getCategoryByKeyword(productInfo.category)
+      if (category) {
+        enhancements.push(...category.promptEnhancements.slice(0, 3))
+      }
     }
 
     // 去重并返回

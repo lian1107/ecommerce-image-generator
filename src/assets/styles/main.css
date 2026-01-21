@@ -5,6 +5,9 @@
 /* 引入字体 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&display=swap');
 
+/* 引入响应式样式 */
+@import './responsive.css';
+
 /* CSS 变量定义 */
 :root {
   /* 主色调 (Warm Terracotta & Charcoal) */

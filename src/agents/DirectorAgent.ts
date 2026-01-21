@@ -2,6 +2,7 @@ import { BaseAgent, type AgentContext, type AgentResult } from './core/BaseAgent
 import { geminiClient } from '@/services/geminiClient'
 import { DIRECTOR_SYSTEM_PROMPT } from '@/prompts/marketingPrompts'
 import type { ProductAnalysis, MarketingRoute } from '@/stores/marketingWorkflowStore'
+import { DirectorResponseSchema, validateAgentResponse } from '@/schemas/agentSchemas'
 
 export class DirectorAgent extends BaseAgent {
     constructor() {
@@ -34,18 +35,22 @@ Please analyze this product and generate marketing strategies.
                 images: images || []
             })
 
-            this.logThought("Strategy draft received. Parsing result...")
+            this.logThought("Strategy draft received. Validating structure...")
 
-            // Validate structure (basic check)
-            if (!result.product_analysis || !result.marketing_routes) {
-                throw new Error("Invalid response structure from Director Agent")
+            // Deep validation with Zod schema
+            const validation = validateAgentResponse(DirectorResponseSchema, result, 'Director')
+
+            if (!validation.success) {
+                throw new Error(validation.error)
             }
+
+            this.logThought("Validation passed. Returning validated data.")
 
             return {
                 success: true,
                 data: {
-                    analysis: result.product_analysis,
-                    routes: result.marketing_routes
+                    analysis: validation.data.product_analysis,
+                    routes: validation.data.marketing_routes
                 }
             }
 

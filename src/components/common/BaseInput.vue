@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { generateId } from '@/utils/accessibility'
 
 interface Props {
   modelValue: string | number
@@ -12,6 +13,7 @@ interface Props {
   hint?: string
   required?: boolean
   maxlength?: number
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -34,13 +36,24 @@ const inputValue = computed({
 })
 
 const hasError = computed(() => !!props.error)
+
+// 为 error/hint 消息生成唯一 ID
+const errorId = generateId('input-error')
+const hintId = generateId('input-hint')
+
+// 计算 aria-describedby
+const describedBy = computed(() => {
+  if (props.error) return errorId
+  if (props.hint) return hintId
+  return undefined
+})
 </script>
 
 <template>
   <div class="base-input-wrapper">
     <label v-if="label" class="base-input__label">
       {{ label }}
-      <span v-if="required" class="base-input__required">*</span>
+      <span v-if="required" class="base-input__required" aria-hidden="true">*</span>
     </label>
     <div class="base-input__container" :class="{ 'base-input__container--error': hasError }">
       <slot name="prefix"></slot>
@@ -52,6 +65,10 @@ const hasError = computed(() => !!props.error)
         :readonly="readonly"
         :required="required"
         :maxlength="maxlength"
+        :aria-label="!label ? ariaLabel : undefined"
+        :aria-required="required"
+        :aria-invalid="hasError"
+        :aria-describedby="describedBy"
         class="base-input"
         :class="{ 'base-input--error': hasError }"
         @blur="emit('blur', $event)"
@@ -59,8 +76,8 @@ const hasError = computed(() => !!props.error)
       />
       <slot name="suffix"></slot>
     </div>
-    <p v-if="error" class="base-input__error">{{ error }}</p>
-    <p v-else-if="hint" class="base-input__hint">{{ hint }}</p>
+    <p v-if="error" :id="errorId" class="base-input__error" role="alert">{{ error }}</p>
+    <p v-else-if="hint" :id="hintId" class="base-input__hint">{{ hint }}</p>
   </div>
 </template>
 
@@ -137,5 +154,26 @@ const hasError = computed(() => !!props.error)
   font-size: 0.8125rem;
   color: var(--color-text-muted, #9ca3af);
   margin: 0;
+}
+
+/* Mobile Optimization */
+@media (max-width: 640px) {
+  .base-input {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 0.75rem 0; /* Larger touch target */
+  }
+
+  .base-input__container {
+    padding: 0 1rem; /* More padding for easier touch */
+  }
+
+  .base-input__label {
+    font-size: 0.9375rem; /* Slightly larger for readability */
+  }
+
+  .base-input__error,
+  .base-input__hint {
+    font-size: 0.875rem; /* Larger for readability */
+  }
 }
 </style>

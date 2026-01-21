@@ -3,43 +3,49 @@ import type {
   SceneType,
   GenerationSettings,
   PromptConfig,
-  PromptLayer
+  PromptLayer,
+  ProductIntrinsicDNA,
+  ArtDirectionDNA
 } from '@/types'
 import { scenes } from '@/config/scenes'
 import { semanticEngine } from './semanticEngine'
 
-// 10层分层提示词架构（新增 MODEL 层）
+// 10层分层提示词架构（新增 MODEL 层, DEEP_VISION 层）
 export enum PromptLayerType {
   CORE_SUBJECT = 'core_subject',           // 核心主体层
   MODEL = 'model',                          // 模特层
-  FUSION = 'fusion',                        // 融合层（新增）
-  CONSISTENCY = 'consistency',              // 一致性层（新增）
+  FUSION = 'fusion',                        // 融合层
+  CONSISTENCY = 'consistency',              // 一致性层
   SCENE_CONTEXT = 'scene_context',         // 场景上下文层
+  DEEP_VISION = 'deep_vision',              // [NEW] 深度视觉层 (光影/材质/摄影)
   LIGHTING = 'lighting',                    // 光照层
   COMPOSITION = 'composition',              // 构图层
   STYLE = 'style',                          // 风格层
   QUALITY = 'quality',                      // 质量层
   SEMANTIC = 'semantic',                    // 语义增强层
-  MARKETING = 'marketing',                  // 营销策略层 (新增)
-  AIDA = 'aida',                            // AIDA 阶段层 (新增)
+  MARKETING = 'marketing',                  // 营销策略层
+  AIDA = 'aida',                            // AIDA 阶段层
   DETAIL = 'detail',                        // 细节层
+  COLOR_FIDELITY = 'color_fidelity',        // [NEW] 色彩保真层
   NEGATIVE = 'negative'                     // 负面提示层
 }
 
 const layerWeights: Record<PromptLayerType, number> = {
   [PromptLayerType.CORE_SUBJECT]: 1.5,
   [PromptLayerType.MODEL]: 1.4,
-  [PromptLayerType.FUSION]: 1.4,           // 融合层权重较高
-  [PromptLayerType.CONSISTENCY]: 1.3,      // 一致性层权重较高
+  [PromptLayerType.FUSION]: 1.4,
+  [PromptLayerType.CONSISTENCY]: 1.3,
   [PromptLayerType.SCENE_CONTEXT]: 1.2,
+  [PromptLayerType.DEEP_VISION]: 1.35,     // High weight for visual control
   [PromptLayerType.LIGHTING]: 1.0,
   [PromptLayerType.COMPOSITION]: 1.0,
   [PromptLayerType.STYLE]: 1.1,
   [PromptLayerType.QUALITY]: 1.3,
   [PromptLayerType.SEMANTIC]: 0.9,
-  [PromptLayerType.MARKETING]: 1.25,       // 营销层权重
-  [PromptLayerType.AIDA]: 1.15,            // AIDA层权重
+  [PromptLayerType.MARKETING]: 1.25,
+  [PromptLayerType.AIDA]: 1.15,
   [PromptLayerType.DETAIL]: 0.8,
+  [PromptLayerType.COLOR_FIDELITY]: 1.45,  // Very high weight to ensure color accuracy
   [PromptLayerType.NEGATIVE]: 1.0
 }
 
@@ -56,13 +62,26 @@ export class PromptBuilder {
   private scene: SceneType = 'studio-white'
   private settings: GenerationSettings | null = null
 
-  private modelPrompt: string = ''  // 模特提示词
-  private fusionPrompt: string = '' // 融合提示词
-  private consistencyPrompt: string = '' // 一致性提示词
-  private marketingPrompt: string = '' // 营销策略提示词
-  private aidaPrompt: string = '' // AIDA提示词
+  // Deep Vision DNA State
+  private intrinsicDNA: ProductIntrinsicDNA | null = null
+  private artDirectionDNA: ArtDirectionDNA | null = null
+
+  private modelPrompt: string = ''
+  private fusionPrompt: string = ''
+  private consistencyPrompt: string = ''
+  private marketingPrompt: string = ''
+  private aidaPrompt: string = ''
   private customLayers: Map<PromptLayerType, string> = new Map()
   private additionalPrompts: string[] = []
+
+  /**
+   * Set Deep Vision DNA
+   */
+  setDeepVision(intrinsic: ProductIntrinsicDNA | null, artDirection: ArtDirectionDNA | null): this {
+    this.intrinsicDNA = intrinsic
+    this.artDirectionDNA = artDirection
+    return this
+  }
 
   /**
    * 设置产品信息
@@ -144,6 +163,8 @@ export class PromptBuilder {
     this.consistencyPrompt = ''
     this.marketingPrompt = ''
     this.aidaPrompt = ''
+    this.intrinsicDNA = null
+    this.artDirectionDNA = null
     this.customLayers.clear()
     this.additionalPrompts = []
     return this
@@ -175,14 +196,101 @@ export class PromptBuilder {
   }
 
   /**
+   * 构建深度视觉层 (Deep Vision Layer)
+   * 将 Intrinsic DNA (事实) 和 Art Direction DNA (风格) 转化为精确的视觉指令
+   */
+  private buildDeepVisionLayer(): string {
+    const parts: string[] = []
+
+    // 1. Product Intrinsic DNA (Consistency Lock)
+    if (this.intrinsicDNA) {
+      if (this.intrinsicDNA.material_analysis?.surface_texture) {
+        parts.push(`Material Surface: ${this.intrinsicDNA.material_analysis.surface_texture}`)
+      }
+      if (this.intrinsicDNA.form_factor?.shape_keywords?.length) {
+        parts.push(`Form Factor: ${this.intrinsicDNA.form_factor.shape_keywords.join(', ')}`)
+      }
+      // Note: Brand colors are handled via palette extraction usually, but can be mentioned here
+      if (this.intrinsicDNA.brand_color_palette?.length) {
+        parts.push(`Brand Colors: ${this.intrinsicDNA.brand_color_palette.join(', ')}`)
+      }
+    }
+
+    // 2. Art Direction DNA (Style Engine)
+    if (this.artDirectionDNA) {
+      const {
+        lighting_scenario,
+        photography_settings,
+        color_grading,
+        composition_guide,
+        optical_mechanics // [NEW] Physical Camera
+      } = this.artDirectionDNA
+
+      // Lighting
+      if (lighting_scenario) {
+        parts.push(`Lighting Style: ${lighting_scenario.style}`)
+        parts.push(`Lighting Direction: ${lighting_scenario.direction}`)
+        parts.push(`Atmosphere: ${lighting_scenario.atmosphere}`)
+      }
+
+      // Photography
+      if (photography_settings) {
+        parts.push(`Shot Type: ${photography_settings.shot_scale}`)
+        parts.push(`Depth of Field: ${photography_settings.depth_of_field}`)
+      }
+
+      // Grading
+      if (color_grading) {
+        parts.push(`Color Grading: ${color_grading.tone}`)
+      }
+
+      // Composition
+      if (composition_guide) {
+        parts.push(`Composition: ${composition_guide.keyword}`)
+      }
+
+      // [NEW] Optical Mechanics (Physical Camera)
+      if (optical_mechanics) {
+        if (optical_mechanics.lens_type) parts.push(`Lens: ${optical_mechanics.lens_type}`)
+        if (optical_mechanics.aperture) parts.push(`Aperture: ${optical_mechanics.aperture}`)
+        if (optical_mechanics.shutter_speed) parts.push(`Shutter: ${optical_mechanics.shutter_speed}`)
+      }
+    }
+
+    return parts.join(', ')
+  }
+
+  /**
    * 构建场景上下文层
    */
   private buildSceneContextLayer(): string {
     const sceneConfig = scenes[this.scene]
     if (!sceneConfig) return ''
 
-    const hints = sceneConfig.promptHints.slice(0, 4)
-    return hints.join(', ')
+    const parts = [...sceneConfig.promptHints.slice(0, 4)]
+
+    // [NEW] Context Fusion (上下文融合)
+    // 根据产品特征和场景类型，注入交互 Prompt
+    if (this.product && this.product.features) {
+      const features = this.product.features.map(f => f.toLowerCase())
+      const sceneId = this.scene.toLowerCase()
+
+      // 示例融合逻辑: 防水产品 + 水场景
+      if (features.some(f => f.includes('waterproof') || f.includes('water resistant'))) {
+        if (sceneId.includes('pool') || sceneId.includes('beach') || sceneId.includes('rain')) {
+          parts.push('water droplets on surface', 'splashing water interaction', 'wet surface reflection')
+        }
+      }
+
+      // 示例融合逻辑: 户外产品 + 阳光场景
+      if (features.some(f => f.includes('solar') || f.includes('outdoor'))) {
+        if (sceneId.includes('sun') || sceneId.includes('outdoor')) {
+          parts.push('strong natural sunlight', 'dynamic hard shadows', 'lens flare')
+        }
+      }
+    }
+
+    return parts.join(', ')
   }
 
   /**
@@ -264,7 +372,7 @@ export class PromptBuilder {
   private buildSemanticLayer(): string {
     if (!this.product) return ''
 
-    const enhancements = semanticEngine.generateSemanticEnhancements(this.product)
+    const enhancements = semanticEngine.generateSemanticEnhancements(this.product, this.product.materialPrompts)
     return enhancements.slice(0, 5).join(', ')
   }
 
@@ -295,10 +403,36 @@ export class PromptBuilder {
   }
 
   /**
+   * 构建色彩保真层 (Color Fidelity Layer)
+   * [V2] 简化为行为指令，不再列出具体颜色名称
+   * 原因：颜色信息现在通过参考图像直接传递给模型
+   */
+  private buildColorFidelityLayer(): string {
+    const isCorrectionEnabled = this.settings?.colorCorrection ?? false
+
+    if (isCorrectionEnabled) {
+      // 行为指令：告诉模型从参考图像学习颜色，而不是列出颜色名称
+      return 'CRITICAL: Match product colors exactly from reference image, preserve original hues, no color shifts or filters'
+    }
+
+    return ''
+  }
+
+  /**
    * 构建负面提示层
    */
   private buildNegativeLayer(): string {
-    return defaultNegativePrompts.join(', ')
+    const negatives = [...defaultNegativePrompts]
+
+    // [NEW] Deep Vision Negative Constraints (Brand Taboos)
+    if (this.artDirectionDNA && this.artDirectionDNA.negative_constraints) {
+      const constraints = this.artDirectionDNA.negative_constraints.forbidden_elements
+      if (constraints && constraints.length > 0) {
+        negatives.push(...constraints)
+      }
+    }
+
+    return negatives.join(', ')
   }
 
   /**
@@ -334,6 +468,12 @@ export class PromptBuilder {
         name: PromptLayerType.SCENE_CONTEXT,
         content: this.customLayers.get(PromptLayerType.SCENE_CONTEXT) || this.buildSceneContextLayer(),
         weight: layerWeights[PromptLayerType.SCENE_CONTEXT],
+        enabled: true
+      },
+      {
+        name: PromptLayerType.DEEP_VISION,
+        content: this.customLayers.get(PromptLayerType.DEEP_VISION) || this.buildDeepVisionLayer(),
+        weight: layerWeights[PromptLayerType.DEEP_VISION],
         enabled: true
       },
       {
@@ -385,6 +525,12 @@ export class PromptBuilder {
         enabled: true
       },
       {
+        name: PromptLayerType.COLOR_FIDELITY,
+        content: this.customLayers.get(PromptLayerType.COLOR_FIDELITY) || this.buildColorFidelityLayer(),
+        weight: layerWeights[PromptLayerType.COLOR_FIDELITY],
+        enabled: true
+      },
+      {
         name: PromptLayerType.NEGATIVE,
         content: this.customLayers.get(PromptLayerType.NEGATIVE) || this.buildNegativeLayer(),
         weight: layerWeights[PromptLayerType.NEGATIVE],
@@ -396,23 +542,68 @@ export class PromptBuilder {
   }
 
   /**
-   * 组合最终提示词
+   * 智能组合提示词 (去重与冲突解决)
    */
   private combinePrompt(layers: PromptLayer[]): string {
     const enabledLayers = layers.filter(l => l.enabled && l.name !== PromptLayerType.NEGATIVE)
 
-    // 按权重排序
+    // 1. 按权重排序 (高权重优先保留)
     enabledLayers.sort((a, b) => b.weight - a.weight)
 
-    // 组合提示词
-    const parts = enabledLayers.map(l => l.content)
+    const finalTags: string[] = []
+    const seenTags = new Set<string>()
 
-    // 添加额外提示词
-    if (this.additionalPrompts.length > 0) {
-      parts.push(...this.additionalPrompts)
+    // 2. 定义冲突逻辑 (Key 出现后，Value 将被屏蔽)
+    const conflictMap: Record<string, string[]> = {
+      '16k resolution': ['8k resolution', '4k resolution', 'high resolution', 'best quality'],
+      '8k resolution': ['4k resolution', 'high resolution', 'best quality'],
+      'masterpiece': ['high quality', 'best quality'],
+      'studio lighting': ['natural sunlight', 'outdoor', 'natural light'],
+      'natural sunlight': ['studio lighting', 'softbox', 'softbox lighting'],
+      'outdoor photography': ['studio lighting', 'indoor'],
+      'commercial photography': ['amateur', 'snapshot']
     }
 
-    return parts.join(', ')
+    const processContent = (content: string) => {
+      // Split by comma, respect parentheses? For simple prompts, comma split is mostly fine.
+      const tags = content.split(',').map(t => t.trim()).filter(t => t.length > 0)
+
+      for (const tag of tags) {
+        const normalized = tag.toLowerCase()
+
+        // Deduplication
+        if (seenTags.has(normalized)) continue
+
+        // Add to result
+        finalTags.push(tag)
+        seenTags.add(normalized)
+
+        // Add conflicts to seenTags (prevent lower priority layers from adding them)
+        if (conflictMap[normalized]) {
+          conflictMap[normalized].forEach(blocked => seenTags.add(blocked))
+        }
+
+        // Smart fuzzy blocking
+        if (normalized.includes('16k')) {
+          seenTags.add('8k resolution'); seenTags.add('8k');
+        }
+        if (normalized.includes('studio lighting')) {
+          seenTags.add('natural light');
+        }
+      }
+    }
+
+    // 3. Process Layers (High Priority First)
+    for (const layer of enabledLayers) {
+      processContent(layer.content)
+    }
+
+    // 4. Process Additional Prompts (Lowest Priority)
+    if (this.additionalPrompts.length > 0) {
+      this.additionalPrompts.forEach(p => processContent(p))
+    }
+
+    return finalTags.join(', ')
   }
 
   /**

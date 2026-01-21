@@ -26,6 +26,7 @@ import { useHistoryStore } from '@/stores/historyStore'
 import { useFusionStore } from '@/stores/fusionStore'
 import { usePromptBuilder } from '@/composables/usePromptBuilder'
 import { toast } from '@/composables/useToast'
+import { useIsMobile, useMobilePanels } from '@/composables/useSwipe'
 
 const apiStore = useApiStore()
 const generationStore = useGenerationStore()
@@ -36,6 +37,11 @@ const { buildPrompt } = usePromptBuilder()
 const isGenerating = ref(false)
 const showSettingsModal = ref(false)
 const currentMode = ref<'landing' | 'quick' | 'advanced' | 'marketing'>('landing')
+
+// Mobile state
+const { isMobile, isTablet } = useIsMobile()
+const { controlPanelOpen, infoPanelOpen, toggleControlPanel, toggleInfoPanel, closeAllPanels } = useMobilePanels()
+const mobileMenuOpen = ref(false)
 
 const switchMode = (mode: 'landing' | 'quick' | 'advanced' | 'marketing') => {
     currentMode.value = mode
@@ -90,27 +96,81 @@ onMounted(() => {
 
 <template>
     <div class="app">
+        <!-- Skip to main content link -->
+        <a href="#main-content" class="skip-link">跳转到主要内容</a>
+
         <!-- View 1: Landing Portal (Full Screen) -->
-        <LandingPageV2 
-            v-if="currentMode === 'landing'" 
-            @enter="switchMode('quick')" 
+        <LandingPageV2
+            v-if="currentMode === 'landing'"
+            @enter="switchMode('quick')"
         />
 
         <!-- View 2: App Workspace (Standard UI) -->
         <div v-else class="app-layout">
-            <AppNavbar 
-                :active-mode="currentMode" 
+            <AppNavbar
+                role="banner"
+                :active-mode="currentMode"
                 @switch-mode="switchMode"
-                @open-settings="showSettingsModal = true" 
+                @open-settings="showSettingsModal = true"
             />
 
+            <!-- Mobile Hamburger Menu Overlay -->
+            <div v-if="isMobile && mobileMenuOpen" class="mobile-menu-overlay" @click="mobileMenuOpen = false" role="presentation">
+                <nav class="mobile-menu" @click.stop role="navigation" aria-label="主导航菜单">
+                    <button
+                        type="button"
+                        class="close-btn"
+                        @click="mobileMenuOpen = false"
+                        aria-label="关闭菜单"
+                    >
+                        <span aria-hidden="true">✕</span>
+                    </button>
+                    <div class="menu-items" role="menu">
+                        <button
+                            type="button"
+                            role="menuitem"
+                            @click="switchMode('quick'); mobileMenuOpen = false"
+                            :class="{ active: currentMode === 'quick' }"
+                            :aria-current="currentMode === 'quick' ? 'page' : undefined"
+                        >
+                            快速生成
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            @click="switchMode('advanced'); mobileMenuOpen = false"
+                            :class="{ active: currentMode === 'advanced' }"
+                            :aria-current="currentMode === 'advanced' ? 'page' : undefined"
+                        >
+                            高级模式
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            @click="switchMode('marketing'); mobileMenuOpen = false"
+                            :class="{ active: currentMode === 'marketing' }"
+                            :aria-current="currentMode === 'marketing' ? 'page' : undefined"
+                        >
+                            营销工作流
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            @click="showSettingsModal = true; mobileMenuOpen = false"
+                        >
+                            设置
+                        </button>
+                    </div>
+                </nav>
+            </div>
+
             <div class="app__main">
-                <ControlPanel width="320px">
+                <ControlPanel role="complementary" aria-label="生成设置" width="320px" :class="{ open: controlPanelOpen }">
                     <!-- ApiConfigSection removed from here -->
                     <GenerationSettings />
                 </ControlPanel>
 
-                <Workspace>
+                <Workspace role="main" id="main-content">
                     <!-- Creation Card (Center Input Area) -->
                     <div class="creation-card">
                         <!-- Page Content -->
@@ -152,10 +212,41 @@ onMounted(() => {
                     </div>
                 </Workspace>
 
-                <InfoPanel width="320px" :default-collapsed="false">
+                <InfoPanel role="complementary" aria-label="历史记录和统计" width="320px" :default-collapsed="false" :class="{ open: infoPanelOpen }">
                     <HistoryList />
                     <StatsPanel />
                 </InfoPanel>
+            </div>
+
+            <!-- Mobile FAB Buttons -->
+            <div v-if="isMobile && currentMode !== 'marketing'" class="fab-container" role="navigation" aria-label="快捷操作">
+                <button
+                    type="button"
+                    class="fab secondary"
+                    @click="toggleInfoPanel"
+                    aria-label="打开历史记录面板"
+                    :aria-expanded="infoPanelOpen"
+                >
+                    <span aria-hidden="true">📊</span>
+                </button>
+                <button
+                    type="button"
+                    class="fab secondary"
+                    @click="toggleControlPanel"
+                    aria-label="打开设置面板"
+                    :aria-expanded="controlPanelOpen"
+                >
+                    <span aria-hidden="true">⚙️</span>
+                </button>
+                <button
+                    type="button"
+                    class="fab secondary"
+                    @click="mobileMenuOpen = true"
+                    aria-label="打开菜单"
+                    :aria-expanded="mobileMenuOpen"
+                >
+                    <span aria-hidden="true">☰</span>
+                </button>
             </div>
         </div>
 
@@ -164,7 +255,7 @@ onMounted(() => {
 
         <!-- Toast Container -->
         <Teleport to="body">
-            <div class="toast-container">
+            <div class="toast-container" role="region" aria-live="polite" aria-label="通知消息">
                 <TransitionGroup name="toast">
                     <BaseToast v-for="t in toast.toasts.value" :key="t.id" :type="t.type" :message="t.message"
                         :dismissible="t.dismissible" @dismiss="toast.dismiss(t.id)" />
@@ -352,5 +443,113 @@ onMounted(() => {
 
 .toast-move {
   transition: transform 0.3s ease;
+}
+
+/* ========================================
+   移动端样式
+   ======================================== */
+
+/* 移动端菜单遮罩 */
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 60px;
+}
+
+.mobile-menu {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 90%;
+  width: 300px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.mobile-menu .close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-muted);
+  padding: 0.25rem;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mobile-menu .menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobile-menu .menu-items button {
+  padding: 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-menu .menu-items button:hover,
+.mobile-menu .menu-items button:active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.mobile-menu .menu-items button.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+/* FAB按钮容器（在responsive.css中已定义基础样式） */
+@media (min-width: 641px) {
+  .fab-container {
+    display: none;
+  }
+}
+
+/* 面板遮罩（移动端） */
+@media (max-width: 640px) {
+  .control-panel::before,
+  .info-panel::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .control-panel.open::before,
+  .info-panel.open::before {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 </style>

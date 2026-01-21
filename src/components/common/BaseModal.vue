@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { watch, onMounted, onUnmounted } from 'vue'
+import { watch, onMounted, onUnmounted, ref, nextTick } from 'vue'
+import { useFocusTrap, useFocusManagement, generateId } from '@/utils/accessibility'
 
 interface Props {
   visible: boolean
@@ -8,6 +9,7 @@ interface Props {
   closable?: boolean
   maskClosable?: boolean
   showFooter?: boolean
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -23,9 +25,20 @@ const emit = defineEmits<{
   confirm: []
 }>()
 
+const modalRef = ref<HTMLElement | null>(null)
+const isActive = ref(false)
+const titleId = generateId('modal-title')
+
+// 焦点管理
+const { saveFocus, restoreFocus } = useFocusManagement()
+
+// 焦点陷阱
+useFocusTrap(modalRef, isActive)
+
 const close = () => {
   emit('update:visible', false)
   emit('close')
+  restoreFocus()
 }
 
 const handleMaskClick = () => {
@@ -44,11 +57,30 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 }
 
-watch(() => props.visible, (visible) => {
+watch(() => props.visible, async (visible) => {
   if (visible) {
     document.body.style.overflow = 'hidden'
+    isActive.value = true
+
+    // 保存当前焦点
+    saveFocus()
+
+    // 等待 DOM 更新后，将焦点移到模态框
+    await nextTick()
+    if (modalRef.value) {
+      // 尝试聚焦第一个可聚焦元素，否则聚焦模态框本身
+      const firstFocusable = modalRef.value.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (firstFocusable) {
+        firstFocusable.focus()
+      } else {
+        modalRef.value.focus()
+      }
+    }
   } else {
     document.body.style.overflow = ''
+    isActive.value = false
   }
 })
 
@@ -64,17 +96,27 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="modal-overlay" @click.self="handleMaskClick">
-      <div class="modal" :style="{ maxWidth: width }">
+    <div v-if="visible" class="modal-overlay" @click.self="handleMaskClick" role="presentation">
+      <div
+        ref="modalRef"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="title ? titleId : undefined"
+        :aria-label="!title ? ariaLabel : undefined"
+        class="modal"
+        :style="{ maxWidth: width }"
+        tabindex="-1"
+      >
         <div v-if="title || closable" class="modal__header">
-          <h3 v-if="title" class="modal__title">{{ title }}</h3>
+          <h3 v-if="title" :id="titleId" class="modal__title">{{ title }}</h3>
           <button
             v-if="closable"
             class="modal__close"
+            type="button"
             @click="close"
-            aria-label="关闭"
+            aria-label="关闭对话框"
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </button>
@@ -84,8 +126,8 @@ onUnmounted(() => {
         </div>
         <div v-if="showFooter" class="modal__footer">
           <slot name="footer">
-            <button class="modal__btn modal__btn--cancel" @click="close">取消</button>
-            <button class="modal__btn modal__btn--confirm" @click="handleConfirm">确认</button>
+            <button type="button" class="modal__btn modal__btn--cancel" @click="close">取消</button>
+            <button type="button" class="modal__btn modal__btn--confirm" @click="handleConfirm">确认</button>
           </slot>
         </div>
       </div>

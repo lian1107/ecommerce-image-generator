@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ProductInfo, UploadedImage, ImageAnalysis } from '@/types'
 import { APP_CONFIG } from '@/config'
+import { sanitizeText, detectXSS } from '@/utils/sanitizer'
+import { productInsightEngine } from '@/services/productInsightEngine'
 
 export const useProductStore = defineStore('product', () => {
   // State
@@ -58,20 +60,34 @@ export const useProductStore = defineStore('product', () => {
   }
 
   const setProductName = (name: string) => {
-    productInfo.value.name = name
+    // XSS 防护
+    if (detectXSS(name)) {
+      console.warn('[Security] Potential XSS detected in product name')
+    }
+    productInfo.value.name = sanitizeText(name)
   }
 
   const setProductCategory = (category: string) => {
-    productInfo.value.category = category
+    if (detectXSS(category)) {
+      console.warn('[Security] Potential XSS detected in category')
+    }
+    productInfo.value.category = sanitizeText(category)
   }
 
   const setProductDescription = (description: string) => {
-    productInfo.value.description = description
+    if (detectXSS(description)) {
+      console.warn('[Security] Potential XSS detected in description')
+    }
+    productInfo.value.description = sanitizeText(description)
   }
 
   const addFeature = (feature: string) => {
-    if (!productInfo.value.features.includes(feature)) {
-      productInfo.value.features.push(feature)
+    const sanitized = sanitizeText(feature)
+    if (sanitized && !productInfo.value.features.includes(sanitized)) {
+      if (detectXSS(feature)) {
+        console.warn('[Security] Potential XSS detected in feature')
+      }
+      productInfo.value.features.push(sanitized)
     }
   }
 
@@ -141,6 +157,15 @@ export const useProductStore = defineStore('product', () => {
       }
       uploadedImages.value.splice(index, 1)
       imageAnalyses.value.delete(id)
+
+      // [Fix] If no images left, reset AI-derived data
+      if (uploadedImages.value.length === 0) {
+        productInfo.value.features = []
+        productInfo.value.materialPrompts = []
+        productInfo.value.colorPalette = []
+        productInfo.value.category = '' // Reset category as it's image-dependent
+        // We keep name/description/brand as they might be user-entered
+      }
     }
   }
 
@@ -179,6 +204,46 @@ export const useProductStore = defineStore('product', () => {
       }
 
       imageAnalyses.value.set(image.id, analysis)
+
+      // 运行 Product Insight Engine (AI 智能分析)
+      // 策略更新: 如果是第一张图片 (Primary)，或者之前的分析数据为空，则运行分析
+      const shouldAnalyze = uploadedImages.value.length === 1 || !productInfo.value.materialPrompts || productInfo.value.materialPrompts.length === 0
+
+      if (shouldAnalyze) {
+        console.log('[ProductStore] Running Product Insight Engine on', image.name)
+
+        // 准备上下文
+        const context = {
+          name: productInfo.value.name,
+          description: productInfo.value.description
+        }
+
+        const insight = await productInsightEngine.analyze(image.preview, context)
+
+        console.log('[ProductStore] Insight Result:', insight)
+
+        // 自动填充信息 (AI-First)
+        // 1. 类别 (总是更新，因为之前为空或手动选的可能不准)
+        // 但如果用户之前已经有了分类，我们可以选择保留或覆盖。
+        //这里为了演示 Category Killer，我们优先使用 AI 识别的
+        productInfo.value.category = insight.mappedCategory
+
+        // 2. 卖点 (合并)
+        const newFeatures = insight.features.filter(f => !productInfo.value.features.includes(f))
+        if (newFeatures.length > 0) {
+          productInfo.value.features.push(...newFeatures)
+        }
+
+        // 3. 材质 Prompt
+        productInfo.value.materialPrompts = insight.generatedPrompts
+
+        // 4. [NEW] 颜色面板 (Fix Color Accuracy)
+        productInfo.value.colorPalette = insight.colorPalette
+
+        // 4. 保存完整 Insight (可选，用于 UI 展示)
+        // 可以在这里扩展 productInfo interface 来存储更多 insight 信息
+      }
+
     } catch (error) {
       console.error('Image analysis failed:', error)
     } finally {

@@ -15,7 +15,7 @@ export const useSettingsStore = defineStore('settings', () => {
     enhanceDetails: true,
     removeBackground: false,
     addShadow: true,
-    colorCorrection: false
+    colorCorrection: true
   })
 
   const advancedOptions = ref<AdvancedOptions>({
@@ -158,7 +158,7 @@ export const useSettingsStore = defineStore('settings', () => {
       enhanceDetails: true,
       removeBackground: false,
       addShadow: true,
-      colorCorrection: false
+      colorCorrection: true
     }
     advancedOptions.value = {
       negativePrompt: '',

@@ -1,12 +1,9 @@
 import { BaseAgent, type AgentContext, type AgentResult } from './core/BaseAgent'
 import { geminiClient } from '@/services/geminiClient'
 import { CRITIC_SYSTEM_PROMPT } from '@/prompts/marketingPrompts'
+import { CriticFeedbackSchema, validateAgentResponse, type CriticFeedback } from '@/schemas/agentSchemas'
 
-export interface CriticFeedback {
-    approved: boolean;
-    critique: string;
-    score: number;
-}
+export type { CriticFeedback }
 
 export class CriticAgent extends BaseAgent {
     constructor() {
@@ -39,11 +36,20 @@ Please review these strategies.
                 userPrompt: input
             })
 
-            this.logThought(`Review complete. Score: ${result.score}. Approved: ${result.approved}`)
+            this.logThought("Review received. Validating feedback...")
+
+            // Deep validation with Zod schema
+            const validation = validateAgentResponse(CriticFeedbackSchema, result, 'Critic')
+
+            if (!validation.success) {
+                throw new Error(validation.error)
+            }
+
+            this.logThought(`Validation passed. Score: ${validation.data.score}. Approved: ${validation.data.approved}`)
 
             return {
                 success: true,
-                data: result as CriticFeedback
+                data: validation.data
             }
 
         } catch (error: any) {

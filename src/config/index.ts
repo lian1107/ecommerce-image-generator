@@ -8,7 +8,12 @@ export const APP_CONFIG = {
 
   api: {
     defaultBaseUrl: 'https://openrouter.ai/api/v1',
-    defaultModel: 'google/gemini-3-pro-image-preview',
+    // 双模型配置
+    defaultImageAnalysisModel: 'gemini-3-flash-preview',   // 图片分析Model (便宜)
+    defaultImageGenerationModel: 'gemini-3-pro-image-preview',   // 绘图创作Model (高质量)
+    defaultTimeout: 60000,
+    // 向后兼容的单模型配置
+    defaultModel: 'gemini-3-pro-image-preview',
     timeout: 120000,
     maxRetries: 3
   },

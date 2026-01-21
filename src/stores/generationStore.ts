@@ -17,12 +17,18 @@ import { useStatsStore } from './statsStore'
 import { useModelStore } from './modelStore'
 import { useFusionStore } from './fusionStore'
 import { useConsistencyStore } from './consistencyStore'
+import type { ArtDirectionDNA } from '@/types'
+import { RequestDeduplicator } from '@/utils/debounce'
+
+// Create a singleton deduplicator for generation requests
+const generationDeduplicator = new RequestDeduplicator()
 
 export const useGenerationStore = defineStore('generation', () => {
   // State
   const currentTask = ref<GenerationTask | null>(null)
   const results = ref<GenerationResult[]>([])
   const selectedResults = ref<Set<string>>(new Set())
+  const lastGenerationTime = ref<number>(0) // Track last generation timestamp
 
   const progress = ref<GenerationProgress>({
     status: 'idle',
@@ -124,6 +130,39 @@ export const useGenerationStore = defineStore('generation', () => {
       builder.addPrompt(sceneStore.customScenePrompt)
     }
 
+    // --- System-Wide Deep Vision Integration ---
+    // Infer Art Direction DNA from basic settings for Quick/Advanced modes
+    let artDirectionDNA: ArtDirectionDNA | null = null
+
+    // Simple mapping logic (can be expanded)
+    if (settingsStore.settings.lighting === 'dramatic') {
+      artDirectionDNA = {
+        lighting_scenario: { style: 'High Contrast Chiaroscuro', direction: 'Rim Light', atmosphere: 'Cinematic & Moody' },
+        color_grading: { tone: 'Deep Shadows, Vibrant Highlights' },
+        optical_mechanics: { lens_type: '35mm Prime Cinematic', aperture: 'f/1.8', shutter_speed: '1/60s' },
+        negative_constraints: { forbidden_elements: ['flat lighting', 'washed out', 'bright commercial'] }
+      }
+    } else if (settingsStore.settings.lighting === 'studio') {
+      artDirectionDNA = {
+        lighting_scenario: { style: 'Softbox Commercial Lighting', direction: '45-degree Front', atmosphere: 'Professional & Clean' },
+        photography_settings: { shot_scale: 'Medium Shot', depth_of_field: 'f/8 Deep Focus' },
+        optical_mechanics: { lens_type: '85mm Macro Product Lens', aperture: 'f/8 (Sharp)' },
+        negative_constraints: { forbidden_elements: ['distorted perspective', 'grainy', 'dark shadows', 'messy background'] }
+      }
+    } else if (settingsStore.settings.lighting === 'natural') {
+      artDirectionDNA = {
+        lighting_scenario: { style: 'Natural Sunlight', direction: 'Window Light', atmosphere: 'Warm & Organic' },
+        color_grading: { tone: 'True-to-life, Pastel' },
+        optical_mechanics: { lens_type: '50mm Standard Lens', aperture: 'f/2.8 Natural Bokeh' },
+        negative_constraints: { forbidden_elements: ['studio backdrop', 'artificial lights', 'harsh contrast'] }
+      }
+    }
+
+    if (artDirectionDNA) {
+      builder.setDeepVision(null, artDirectionDNA)
+    }
+    // -------------------------------------------
+
     const config = builder.build()
     promptConfig.value = config
     editedPrompt.value = config.finalPrompt
@@ -156,36 +195,56 @@ export const useGenerationStore = defineStore('generation', () => {
       return false
     }
 
+    // Debounce check - prevent rapid consecutive clicks
+    const now = Date.now()
+    const MIN_INTERVAL = 1000 // Minimum 1 second between generation requests
+    if (now - lastGenerationTime.value < MIN_INTERVAL) {
+      console.warn('Generation request throttled - please wait before generating again')
+      return false
+    }
+    lastGenerationTime.value = now
+
     // Build or use edited prompt
     const config = promptConfig.value || buildPrompt()
     let prompt = finalPrompt.value
 
-    // Initialize task
-    const task: GenerationTask = {
-      id: `task_${Date.now()}`,
-      status: 'preparing',
-      results: [],
-      startedAt: new Date(),
-      prompt: config,
-      settings: settingsStore.settings
+    // Create a unique key for this generation request
+    const requestKey = `gen_${prompt.substring(0, 50)}_${settingsStore.quantity}_${Date.now()}`
+
+    // Check if an identical request is already in progress
+    if (generationDeduplicator.isPending(requestKey)) {
+      console.warn('Duplicate generation request detected - using existing request')
+      return false
     }
 
-    currentTask.value = task
-    results.value = []
-    selectedResults.value.clear()
+    // Execute with deduplication
+    return generationDeduplicator.execute(requestKey, async () => {
+      // Initialize task
+      const task: GenerationTask = {
+        id: `task_${Date.now()}`,
+        status: 'preparing',
+        results: [],
+        startedAt: new Date(),
+        prompt: config,
+        settings: settingsStore.settings
+      }
 
-    // Update progress
-    const quantity = settingsStore.quantity
-    progress.value = {
-      status: 'preparing',
-      progress: 0,
-      currentStep: '准备生成...',
-      totalSteps: quantity
-    }
+      currentTask.value = task
+      results.value = []
+      selectedResults.value.clear()
 
-    try {
-      progress.value.status = 'generating'
-      progress.value.currentStep = '正在生成图片...'
+      // Update progress
+      const quantity = settingsStore.quantity
+      progress.value = {
+        status: 'preparing',
+        progress: 0,
+        currentStep: '准备生成...',
+        totalSteps: quantity
+      }
+
+      try {
+        progress.value.status = 'generating'
+        progress.value.currentStep = '正在生成图片...'
 
       // Generate images
       // 组合产品图和融合参考图
@@ -249,23 +308,24 @@ export const useGenerationStore = defineStore('generation', () => {
         sceneStore.selectedSceneId
       )
 
-      return true
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '生成失败'
+        return true
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '生成失败'
 
-      progress.value = {
-        status: 'error',
-        progress: 0,
-        currentStep: errorMessage,
-        totalSteps: quantity,
-        error: errorMessage
+        progress.value = {
+          status: 'error',
+          progress: 0,
+          currentStep: errorMessage,
+          totalSteps: quantity,
+          error: errorMessage
+        }
+
+        task.status = 'error'
+        statsStore.recordGeneration(0, 0, sceneStore.selectedSceneId)
+
+        return false
       }
-
-      task.status = 'error'
-      statsStore.recordGeneration(0, 0, sceneStore.selectedSceneId)
-
-      return false
-    }
+    })
   }
 
   const cancelGeneration = () => {

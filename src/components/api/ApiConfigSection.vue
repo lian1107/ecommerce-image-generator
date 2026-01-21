@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useApiStore } from '@/stores/apiStore'
-import { BaseButton, BaseInput, BaseSelect } from '@/components/common'
+import { BaseButton, BaseInput } from '@/components/common'
 
 const apiStore = useApiStore()
 
@@ -12,19 +12,20 @@ const isTestingConnection = ref(false)
 const maskedApiKey = computed(() => {
   if (!localApiKey.value) return ''
   if (showApiKey.value) return localApiKey.value
-  return localApiKey.value.slice(0, 8) + '••••••••' + localApiKey.value.slice(-4)
+  // 使用加密工具的混淆方法（更安全和一致）
+  return apiStore.obfuscatedApiKey || localApiKey.value.slice(0, 8) + '••••••••' + localApiKey.value.slice(-4)
 })
 
 const handleApiKeyChange = (value: string | number) => {
   localApiKey.value = String(value)
 }
 
-const saveApiKey = () => {
-  apiStore.setApiKey(localApiKey.value)
+const saveApiKey = async () => {
+  await apiStore.setApiKey(localApiKey.value)
 }
 
 const testConnection = async () => {
-  saveApiKey()
+  await saveApiKey()
   isTestingConnection.value = true
   await apiStore.testConnection()
   isTestingConnection.value = false
@@ -32,6 +33,12 @@ const testConnection = async () => {
 
 const toggleShowApiKey = () => {
   showApiKey.value = !showApiKey.value
+}
+
+const handleProviderChange = async (provider: 'google' | 'openrouter') => {
+  await apiStore.setProvider(provider)
+  // 更新本地 API Key 以反映新 provider 的值
+  localApiKey.value = apiStore.apiKey
 }
 
 const statusClass = computed(() => ({
@@ -47,24 +54,24 @@ const statusClass = computed(() => ({
     <!-- Provider Selection -->
     <div class="api-config__provider-selector">
       <label class="provider-option">
-        <input 
-          type="radio" 
-          name="provider" 
-          value="google" 
+        <input
+          type="radio"
+          name="provider"
+          value="google"
           :checked="apiStore.provider === 'google'"
-          @change="apiStore.setProvider('google')"
+          @change="handleProviderChange('google')"
         >
         <span class="provider-option__label" :class="{ 'active': apiStore.provider === 'google' }">
           Google AI Studio
         </span>
       </label>
       <label class="provider-option">
-        <input 
-          type="radio" 
-          name="provider" 
-          value="openrouter" 
+        <input
+          type="radio"
+          name="provider"
+          value="openrouter"
           :checked="apiStore.provider === 'openrouter'"
-          @change="apiStore.setProvider('openrouter')"
+          @change="handleProviderChange('openrouter')"
         >
         <span class="provider-option__label" :class="{ 'active': apiStore.provider === 'openrouter' }">
           OpenRouter
@@ -121,13 +128,43 @@ const statusClass = computed(() => ({
       {{ apiStore.connectionStatus.error }}
     </p>
 
-    <div class="api-config__field">
-      <BaseSelect
-        :model-value="apiStore.model"
-        :options="apiStore.currentProviderDefaults.models"
-        label="Model"
-        @update:model-value="(v) => apiStore.setModel(String(v))"
-      />
+    <!-- 双模型配置 -->
+    <div class="api-config__dual-models">
+      <h4 class="api-config__section-title">🔧 模型配置</h4>
+      
+      <!-- 图片分析Model -->
+      <div class="api-config__field">
+        <BaseInput
+          :model-value="apiStore.imageAnalysisModel"
+          type="text"
+          label="🔍 图片分析Model"
+          :placeholder="apiStore.provider === 'openrouter' ? 'google/gemini-3-flash-preview' : 'gemini-3-flash-preview'"
+          @update:model-value="(v) => apiStore.setImageAnalysisModel(String(v))"
+        />
+        <p class="api-config__model-hint">
+          <span class="hint-tag hint-tag--cheap">💰 速度快</span>
+          用于产品分析、材质识别、QA检查等任务
+          <br/>
+          <span class="hint-recommended">推荐: {{ apiStore.provider === 'openrouter' ? 'google/gemini-3-flash-preview' : 'gemini-3-flash-preview' }}</span>
+        </p>
+      </div>
+
+      <!-- 绘图创作Model -->
+      <div class="api-config__field">
+        <BaseInput
+          :model-value="apiStore.imageGenerationModel"
+          type="text"
+          label="🎨 绘图创作Model"
+          :placeholder="apiStore.provider === 'openrouter' ? 'google/gemini-3-pro-image-preview' : 'gemini-3-pro-image-preview'"
+          @update:model-value="(v) => apiStore.setImageGenerationModel(String(v))"
+        />
+        <p class="api-config__model-hint">
+          <span class="hint-tag hint-tag--quality">⭐ 高质量</span>
+          用于图片生成，建议使用高质量模型
+          <br/>
+          <span class="hint-recommended">推荐: {{ apiStore.provider === 'openrouter' ? 'google/gemini-3-pro-image-preview' : 'gemini-3-pro-image-preview' }}</span>
+        </p>
+      </div>
     </div>
 
     <BaseButton
@@ -287,5 +324,58 @@ const statusClass = computed(() => ({
   color: var(--color-primary, #3b82f6);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   font-weight: 600;
+}
+
+/* 双模型配置样式 */
+.api-config__dual-models {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-bg-secondary, #f9fafb);
+  border-radius: var(--radius-md, 0.5rem);
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.api-config__section-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text, #374151);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-config__model-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #9ca3af);
+  margin: 0.375rem 0 0 0;
+  line-height: 1.5;
+}
+
+.hint-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  margin-right: 0.375rem;
+}
+
+.hint-tag--cheap {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.hint-tag--quality {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.hint-recommended {
+  font-weight: 500;
+  color: var(--color-primary, #3b82f6);
 }
 </style>

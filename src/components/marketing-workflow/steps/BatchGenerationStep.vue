@@ -4,6 +4,7 @@ import { useMarketingWorkflowStore } from '@/stores/marketingWorkflowStore'
 import { VisionQAAgent, type QAFeedback } from '@/agents/VisionQAAgent'
 import { AgentOrchestrator } from '@/agents/core/AgentOrchestrator'
 import { geminiClient } from '@/services/geminiClient'
+import { createPromptBuilder, PromptLayerType } from '@/services/promptBuilder'
 import { BaseButton } from '@/components/common'
 
 const store = useMarketingWorkflowStore()
@@ -19,28 +20,50 @@ const startBatchProcess = async () => {
     const orchestrator = AgentOrchestrator.getInstance()
     const qaAgent = new VisionQAAgent()
     
-    store.addThought('System', `Starting batch generation for ${totalItems.value} items...`)
+    store.addThought('System', `Starting batch generation for ${totalItems.value} items via Deep Vision Engine...`)
     
+    // Get DNA for Deep Vision
+    const intrinsicDNA = store.productAnalysis?.intrinsic_dna || null
+    const selectedRoute = store.marketingRoutes[store.selectedRouteIndex]
+    const artDirectionDNA = selectedRoute?.art_direction_dna || null
+
     for (const [index, item] of store.contentPlan.items.entries()) {
         item.status = 'generating'
         store.addThought('Generator', `Generating Item #${index + 1}: ${item.title_zh}...`)
         
         try {
-            // 1. Generate Image
+            // 1. Generate Image with Deep Vision Prompt Builder
+            const referenceImages = store.getReferencesForGeneration(item.type, item.visual_prompt_en)
+            
+            store.addThought('Generator', `Applying Visual DNA: ${artDirectionDNA?.lighting_scenario?.style || 'Standard'}`)
+            
+            // Construct Deep Vision Prompt
+            const settings = {
+                aspectRatio: item.ratio,
+                style: 'commercial',
+                lighting: 'studio',
+                quality: 'high',
+                quantity: 1,
+                background: 'white',
+                enhanceDetails: true,
+                removeBackground: false,
+                addShadow: false,
+                colorCorrection: true
+            }
+
+            const builder = createPromptBuilder()
+                .setDeepVision(intrinsicDNA, artDirectionDNA)
+                // Use the Agent's visual prompt as the core subject description
+                .setLayerContent(PromptLayerType.CORE_SUBJECT, item.visual_prompt_en)
+                // We can also inject settings to ensure builder adds quality keywords
+                .setSettings(settings as any)
+            
+            const finalPrompt = builder.build().finalPrompt
+            
             const results = await geminiClient.generateImage({
-                prompt: item.visual_prompt_en,
-                settings: {
-                    aspectRatio: item.ratio,
-                    style: 'commercial',
-                    lighting: 'studio',
-                    quality: 'high',
-                    quantity: 1, // Fix: Add required fields
-                    background: 'white',
-                    enhanceDetails: true,
-                    removeBackground: false,
-                    addShadow: false,
-                    colorCorrection: true
-                }
+                prompt: finalPrompt,
+                referenceImages: referenceImages,
+                settings: settings as any
             })
             
             if (results && results.length > 0) {

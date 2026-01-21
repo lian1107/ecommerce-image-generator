@@ -6,6 +6,7 @@ interface Props {
   result: GenerationResult
   selected?: boolean
   showActions?: boolean
+  enableLazyLoad?: boolean
 }
 
 const emit = defineEmits<{
@@ -15,23 +16,110 @@ const emit = defineEmits<{
   preview: [result: GenerationResult]
 }>()
 
-// Use direct props in template
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   selected: false,
-  showActions: true
+  showActions: true,
+  enableLazyLoad: true
 })
 
 const isLoading = ref(true)
 const hasError = ref(false)
+const imageRef = ref<HTMLImageElement | null>(null)
+const observer = ref<IntersectionObserver | null>(null)
+
+// 懒加载逻辑
+const setupLazyLoad = (img: HTMLImageElement) => {
+  imageRef.value = img
+
+  // 如果不支持 IntersectionObserver 或不启用懒加载，直接加载图片
+  if (!props.enableLazyLoad || !('IntersectionObserver' in window)) {
+    const src = img.dataset.src || props.result.imageUrl
+    if (src && !img.src) {
+      img.src = src
+    }
+    return
+  }
+
+  observer.value = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const image = entry.target as HTMLImageElement
+          const src = image.dataset.src
+
+          if (src && !image.src) {
+            image.src = src
+            image.classList.add('lazy-loading')
+          }
+
+          // 加载后停止观察
+          if (observer.value) {
+            observer.value.unobserve(image)
+          }
+        }
+      })
+    },
+    {
+      rootMargin: '200px', // 提前 200px 开始加载
+      threshold: 0.01
+    }
+  )
+
+  observer.value.observe(img)
+
+  // 如果图片已经在视口内，立即触发加载
+  const rect = img.getBoundingClientRect()
+  const inViewport = rect.top < window.innerHeight + 200 && rect.bottom > -200
+  if (inViewport && img.dataset.src && !img.src) {
+    img.src = img.dataset.src
+    img.classList.add('lazy-loading')
+    observer.value.unobserve(img)
+  }
+}
 
 const handleLoad = () => {
   isLoading.value = false
+  if (imageRef.value) {
+    imageRef.value.classList.remove('lazy-loading')
+    imageRef.value.classList.add('lazy-loaded')
+  }
 }
 
 const handleError = () => {
   isLoading.value = false
   hasError.value = true
+  if (imageRef.value) {
+    imageRef.value.classList.remove('lazy-loading')
+    imageRef.value.classList.add('lazy-error')
+  }
 }
+
+// 清理
+const cleanup = () => {
+  if (observer.value && imageRef.value) {
+    observer.value.unobserve(imageRef.value)
+    observer.value.disconnect()
+  }
+}
+
+// 生命周期
+import { onMounted, onBeforeUnmount, watch } from 'vue'
+
+onMounted(() => {
+  if (imageRef.value && props.enableLazyLoad) {
+    setupLazyLoad(imageRef.value)
+  }
+})
+
+watch(imageRef, (newRef) => {
+  if (newRef && props.enableLazyLoad) {
+    setupLazyLoad(newRef)
+  }
+})
+
+onBeforeUnmount(() => {
+  cleanup()
+})
 </script>
 
 <template>
@@ -41,18 +129,21 @@ const handleError = () => {
     @click="emit('select', result)"
   >
     <div class="image-card__image-container">
-      <div v-if="isLoading" class="image-card__loading">
+      <!-- 骨架屏占位符 -->
+      <div v-if="isLoading" class="image-card__skeleton">
+        <div class="skeleton-shimmer"></div>
         <span class="image-card__spinner"></span>
       </div>
       <div v-else-if="hasError" class="image-card__error">
-        <span>加载失败</span>
+        <span>❌ 加载失败</span>
       </div>
       <img
+        ref="imageRef"
         v-show="!isLoading && !hasError"
-        :src="result.imageUrl"
+        :data-src="enableLazyLoad ? result.imageUrl : undefined"
+        :src="enableLazyLoad ? undefined : result.imageUrl"
         :alt="result.prompt"
         class="image-card__image"
-        loading="lazy"
         @load="handleLoad"
         @error="handleError"
       />
@@ -131,9 +222,67 @@ const handleError = () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.image-card__loading,
+.image-card__image.lazy-loading {
+  opacity: 0.5;
+  filter: blur(4px);
+}
+
+.image-card__image.lazy-loaded {
+  opacity: 1;
+  filter: none;
+}
+
+.image-card__image.lazy-error {
+  opacity: 0.3;
+}
+
+/* 骨架屏占位符 */
+.image-card__skeleton {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  overflow: hidden;
+}
+
+.skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 100%
+  );
+  animation: shimmer-slide 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
 .image-card__error {
   position: absolute;
   inset: 0;

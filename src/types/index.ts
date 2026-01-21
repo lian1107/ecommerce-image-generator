@@ -12,6 +12,26 @@ export interface ApiConnectionStatus {
   lastChecked: Date | null
 }
 
+// 双模型 API 配置
+export interface DualModelApiConfig {
+  apiKey: string
+  baseUrl: string
+  imageAnalysisModel: string   // 图片分析Model (用于产品分析、材质识别、QA检查)
+  imageGenerationModel: string // 绘图创作Model (用于图片生成)
+}
+
+// 模型用途类型
+export type ModelPurpose = 'analysis' | 'generation'
+
+// 材质分析结果类型
+export interface MaterialAnalysisResult {
+  primaryMaterial: string                        // 主要材质: metal, plastic, fabric, glass, wood, ceramic, leather, other
+  surfaceTexture: string                         // 表面纹理描述
+  reflectiveness: 'high' | 'medium' | 'low' | 'none'  // 反光程度
+  colorPalette: string[]                         // 主要颜色
+  suggestedPrompts: string[]                     // 建议的视觉描述 prompt
+}
+
 // 产品相关类型
 export interface ProductInfo {
   name: string
@@ -21,6 +41,8 @@ export interface ProductInfo {
   targetAudience: string
   brand: string
   style: string
+  colorPalette?: string[]    // [NEW] 产品主要颜色
+  materialPrompts?: string[] // AI 分析的材质提示词
 }
 
 export interface UploadedImage {
@@ -127,6 +149,49 @@ export interface ConsistencyConfig {
   referenceImages: ReferenceImage[]
   strength: number // 0-1, 影响一致性的强度
 }
+
+// --- Deep Vision DNA Types (Twin-Engine) ---
+
+// 1. 产品固有 DNA (不可变事实)
+export interface ProductIntrinsicDNA {
+  material_analysis: {
+    surface_texture: string;      // e.g., "Matte aluminum", "Glossy ceramic", "Fabric mesh"
+    reflectivity: string;         // e.g., "High", "Low", "Transparent", "Subsurface scattering"
+  };
+  form_factor: {
+    shape_keywords: string[];     // e.g., "Cylindrical", "Rounded edges", "Geometric"
+  };
+  brand_color_palette: string[];    // Hex codes extracted from reference
+}
+
+// 2. 艺术指导 DNA (可变风格)
+export interface ArtDirectionDNA {
+  lighting_scenario?: {
+    style: string;               // e.g., "Soft commercial", "High contrast dramatic", "Rembrandt"
+    direction: string;           // e.g., "Rim light", "Top down", "Backlit", "Window light"
+    atmosphere: string;          // e.g., "Warm & Cozy", "Cool & Tech", "Moody"
+  };
+  photography_settings?: {
+    shot_scale: string;          // e.g., "Product close-up", "Medium shot", "Macro detail"
+    depth_of_field: string;      // e.g., "f/8 (Sharp)", "f/1.8 (Bokeh)", "Deep focus"
+  };
+  composition_guide?: {
+    keyword: string;             // e.g., "Minimalist center", "Dynamic diagonal", "Rule of thirds"
+  };
+  color_grading?: {
+    tone: string;                // e.g., "Vibrant", "Desaturated", "Pastel", "Dark & Moody"
+  };
+  optical_mechanics?: {
+    lens_type: string;           // e.g., "85mm Prime", "24mm Tilt-shift", "100mm Macro"
+    aperture: string;            // e.g., "f/1.2", "f/8", "T-stop 2.0"
+    shutter_speed?: string;      // e.g., "1/2000s", "Long exposure"
+  };
+  negative_constraints?: {
+    forbidden_elements: string[]; // e.g., ["vintage filters", "neon lights", "distorted geometry"]
+  };
+}
+
+// --- End Deep Vision DNA ---
 
 // 生成设置相关类型
 export interface GenerationSettings {

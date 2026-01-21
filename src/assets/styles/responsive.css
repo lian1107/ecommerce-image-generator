@@ -1,0 +1,430 @@
+/* ===========================================
+   移动端响应式样式
+   =========================================== */
+
+/* 响应式断点 */
+:root {
+  /* Breakpoints */
+  --breakpoint-xs: 375px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+
+  /* Mobile-specific spacing */
+  --mobile-padding: 1rem;
+  --mobile-gap: 0.75rem;
+
+  /* Touch target sizes (WCAG 2.1 AA: minimum 44x44px) */
+  --touch-target-min: 44px;
+}
+
+/* ========================================
+   基础移动端优化 (所有设备)
+   ======================================== */
+
+/* 触摸目标最小尺寸 */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.clickable {
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+}
+
+/* 防止iOS缩放 */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+textarea,
+select {
+  font-size: 16px !important; /* Prevent iOS zoom on focus */
+}
+
+/* 优化触摸反馈 */
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  .clickable:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+    transition: all 0.1s ease;
+  }
+}
+
+/* ========================================
+   小屏手机 (< 640px)
+   ======================================== */
+@media (max-width: 640px) {
+  /* 全局字体调整 */
+  html {
+    font-size: 14px;
+  }
+
+  body {
+    font-size: 0.875rem;
+  }
+
+  /* 标题缩小 */
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.125rem; }
+  h4 { font-size: 1rem; }
+
+  /* 隐藏桌面侧边栏 */
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  /* 三栏布局改为单栏 */
+  .app__main {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  /* 控制面板移至底部抽屉 */
+  .control-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto;
+    max-height: 70vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .control-panel.open {
+    transform: translateY(0);
+  }
+
+  /* Info面板改为全屏模态 */
+  .info-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    z-index: 101;
+    background: var(--color-bg);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .info-panel.open {
+    transform: translateX(0);
+  }
+
+  /* 工作区占满 */
+  .workspace {
+    width: 100%;
+    padding: var(--mobile-padding);
+    overflow-y: auto;
+  }
+
+  /* 创建卡片 */
+  .creation-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .creation-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* 按钮 */
+  .generate-btn {
+    width: 100% !important;
+    min-width: auto !important;
+  }
+
+  .action-bar {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* 结果网格 */
+  .results-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* Toast容器 */
+  .toast-container {
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+  }
+
+  /* 模态框全屏 */
+  .modal-content {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  /* 表单优化 */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* 图片上传区域 */
+  .image-uploader {
+    min-height: 200px;
+  }
+
+  /* 场景选择器 */
+  .scene-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+}
+
+/* ========================================
+   中等屏幕平板 (641px - 1024px)
+   ======================================== */
+@media (min-width: 641px) and (max-width: 1024px) {
+  /* 两栏布局 */
+  .app__main {
+    flex-wrap: wrap;
+  }
+
+  .control-panel {
+    width: 280px !important;
+  }
+
+  .info-panel {
+    position: fixed;
+    right: 0;
+    top: var(--navbar-height, 64px);
+    bottom: 0;
+    width: 320px !important;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 50;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .info-panel.open {
+    transform: translateX(0);
+  }
+
+  .workspace {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .creation-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .results-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ========================================
+   大屏设备优化 (> 1024px)
+   ======================================== */
+@media (min-width: 1025px) {
+  .mobile-only {
+    display: none !important;
+  }
+
+  .results-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+/* ========================================
+   横屏手机特殊处理
+   ======================================== */
+@media (max-width: 896px) and (orientation: landscape) {
+  .app__main {
+    flex-direction: row;
+  }
+
+  .control-panel,
+  .info-panel {
+    max-height: 100vh;
+    overflow-y: auto;
+  }
+
+  .workspace {
+    flex: 1;
+    overflow-y: auto;
+  }
+}
+
+/* ========================================
+   移动端导航栏样式
+   ======================================== */
+@media (max-width: 640px) {
+  .app-navbar {
+    padding: 0.75rem var(--mobile-padding);
+  }
+
+  .navbar-menu {
+    position: fixed;
+    top: var(--navbar-height, 56px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-bg);
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    z-index: 99;
+    padding: 1rem;
+    overflow-y: auto;
+  }
+
+  .navbar-menu.open {
+    transform: translateY(0);
+  }
+
+  /* 汉堡菜单图标 */
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--color-text);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+
+  .hamburger.active span:nth-child(1) {
+    transform: rotate(45deg) translateY(8px);
+  }
+
+  .hamburger.active span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .hamburger.active span:nth-child(3) {
+    transform: rotate(-45deg) translateY(-8px);
+  }
+}
+
+/* ========================================
+   移动端浮动操作按钮 (FAB)
+   ======================================== */
+@media (max-width: 640px) {
+  .fab-container {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .fab:active {
+    transform: scale(0.95);
+  }
+
+  .fab.secondary {
+    background: var(--color-bg-card);
+    color: var(--color-text);
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* ========================================
+   移动端优化工具类
+   ======================================== */
+
+/* 阻止背景滚动（当模态框打开时） */
+.mobile-no-scroll {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* 安全区域适配（刘海屏） */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.safe-area-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* 移动端文本对齐 */
+@media (max-width: 640px) {
+  .text-center-mobile {
+    text-align: center;
+  }
+
+  .text-left-mobile {
+    text-align: left;
+  }
+}
+
+/* 移动端显示/隐藏 */
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .show-mobile {
+    display: block;
+  }
+
+  .hide-mobile {
+    display: none;
+  }
+}

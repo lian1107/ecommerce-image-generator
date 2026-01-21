@@ -82,8 +82,33 @@ const proceedToPlanning = () => {
                       <strong>🎯 Audience:</strong> {{ route.target_audience_zh }}
                   </div>
                   
-                  <div class="visual-specs">
+                   <div class="visual-specs">
                        <strong>🎨 Elements:</strong> {{ route.visual_elements_zh }}
+                  </div>
+
+                  <!-- Deep Vision DNA Display -->
+                  <div class="dna-block" v-if="route.art_direction_dna">
+                      <div class="dna-item">
+                          <span class="dna-icon">💡</span>
+                          <span>{{ route.art_direction_dna.lighting_scenario?.style }}</span>
+                      </div>
+                      <div class="dna-item">
+                          <span class="dna-icon">📷</span>
+                          <span>{{ route.art_direction_dna.photography_settings?.shot_scale }}</span>
+                      </div>
+                      <div class="dna-item">
+                          <span class="dna-icon">🍭</span>
+                          <span>{{ route.art_direction_dna.color_grading?.tone }}</span>
+                      </div>
+                      <!-- Deep Vision 2.0 -->
+                      <div class="dna-item" v-if="route.art_direction_dna.optical_mechanics">
+                          <span class="dna-icon">👁️</span>
+                          <span>{{ route.art_direction_dna.optical_mechanics.lens_type }}</span>
+                      </div>
+                       <div class="dna-item dna-taboo" v-if="route.art_direction_dna.negative_constraints?.forbidden_elements?.length">
+                          <span class="dna-icon">🚫</span>
+                          <span>No: {{ route.art_direction_dna.negative_constraints.forbidden_elements[0] }}...</span>
+                      </div>
                   </div>
               </div>
           </div>
@@ -199,5 +224,30 @@ const proceedToPlanning = () => {
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
+}
+
+.dna-block {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--color-border);
+    flex-wrap: wrap;
+}
+
+.dna-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    background: var(--color-bg-tertiary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: var(--color-text-secondary);
+}
+
+.dna-taboo {
+    background: rgba(255, 0, 0, 0.1);
+    color: var(--color-error);
 }
 </style>

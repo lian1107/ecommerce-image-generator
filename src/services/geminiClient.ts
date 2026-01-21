@@ -70,7 +70,9 @@ export type ApiProvider = 'google' | 'openrouter'
 export class GeminiClient {
   private apiKey: string
   private baseUrl: string
-  private model: string
+  private model: string  // 向后兼容
+  private analysisModel: string   // 图片分析Model
+  private generationModel: string // 绘图创作Model
   private timeout: number
 
   // Helper to determine provider based on Base URL
@@ -83,6 +85,9 @@ export class GeminiClient {
     this.apiKey = config.apiKey || ''
     this.baseUrl = config.baseUrl || APP_CONFIG.api.defaultBaseUrl
     this.model = config.model || APP_CONFIG.api.defaultModel
+    // 双模型默认值
+    this.analysisModel = APP_CONFIG.api.defaultImageAnalysisModel
+    this.generationModel = APP_CONFIG.api.defaultImageGenerationModel
     this.timeout = APP_CONFIG.api.timeout
   }
 
@@ -94,19 +99,63 @@ export class GeminiClient {
     this.baseUrl = url
   }
 
+  // 向后兼容的 setModel
   setModel(model: string): void {
     this.model = model
+    this.generationModel = model
   }
 
-  private getEndpoint(): string {
+  // 设置图片分析模型
+  setAnalysisModel(model: string): void {
+    this.analysisModel = model
+  }
+
+  // 设置绘图创作模型
+  setGenerationModel(model: string): void {
+    this.generationModel = model
+    this.model = model // 保持向后兼容
+  }
+
+  // 获取当前使用的分析模型
+  getAnalysisModel(): string {
+    return this.analysisModel
+  }
+
+  // 获取当前使用的生成模型
+  getGenerationModel(): string {
+    return this.generationModel
+  }
+
+  // Normalize model name based on provider
+  private normalizeModelName(model: string): string {
+    if (this.provider === 'openrouter') {
+      // OpenRouter requires 'google/' prefix for Gemini models
+      if (model.startsWith('gemini') && !model.startsWith('google/')) {
+        return `google/${model}`
+      }
+      return model
+    } else {
+      // Google Native requires NO prefix
+      if (model.startsWith('google/')) {
+        return model.replace('google/', '')
+      }
+      return model
+    }
+  }
+
+  // 获取指定模型的 endpoint
+  private getEndpointForModel(modelName: string): string {
+    const normalized = this.normalizeModelName(modelName)
     if (this.provider === 'openrouter') {
       return `${this.baseUrl}/chat/completions`
     }
     // Google Native
-    if (this.model.includes('gemini-pro-vision') || this.model.includes('gemini-3')) {
-      return `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`
-    }
-    return `${this.baseUrl}/models/${this.model}:generateContent?key=${this.apiKey}`
+    return `${this.baseUrl}/models/${normalized}:generateContent?key=${this.apiKey}`
+  }
+
+  // Deprecated: Internal use only, relies on shared state
+  private getEndpoint(): string {
+    return this.getEndpointForModel(this.model)
   }
 
   async testConnection(): Promise<{ success: boolean; message: string; model?: string }> {
@@ -134,7 +183,7 @@ export class GeminiClient {
           const error = await response.json().catch(() => ({}))
           return { success: false, message: error.error?.message || `OpenRouter 连接失败: ${response.status}` }
         }
-        return { success: true, message: 'OpenRouter 连接成功', model: this.model }
+        return { success: true, message: 'OpenRouter 连接成功', model: this.generationModel }
 
       } else {
         // Google Native Test
@@ -158,7 +207,7 @@ export class GeminiClient {
         return {
           success: true,
           message: hasImageModel ? 'Google API 连接成功' : 'API 连接成功 (未找到特定模型)',
-          model: this.model
+          model: this.generationModel
         }
       }
     } catch (error) {
@@ -171,72 +220,178 @@ export class GeminiClient {
 
   /**
    * Analyze text/images for Agent Logic (Director, Planner)
+   * 使用 analysisModel (图片分析Model)
    */
   async analyzeWithText(options: AnalyzeTextOptions): Promise<any> {
     const { systemPrompt, userPrompt, images } = options
+    const targetModel = this.analysisModel // Use local variable
 
     // Construct the prompt
     let fullPrompt = userPrompt
     if (systemPrompt) {
-      // For Gemini, system instructions are often passed as the first user message or specific system instruction
-      // Here we prepend it for simplicity
       fullPrompt = `${systemPrompt}\n\nUser Input:\n${userPrompt}`
     }
 
-    const payload: any = {
-      contents: [{
-        parts: [{ text: fullPrompt }]
-      }],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-      }
-    }
+    console.log(`[GeminiClient] analyzeWithText using analysisModel: ${targetModel}`)
 
-    // Add images if present
-    if (images && images.length > 0) {
-      // Need to handle image attachment in Gemini Format
-      const parts = []
-      for (const img of images) {
-        const base64Data = img.replace(/^data:image\/\w+;base64,/, '')
-        parts.push({
-          inlineData: {
-            mimeType: 'image/jpeg',
-            data: base64Data
-          }
-        })
-      }
-      parts.push({ text: fullPrompt })
-      payload.contents[0].parts = parts
-    }
-
-    // Call API (Reuse Google generate logic mostly, but return text)
     try {
-      const response = await fetch(this.getEndpoint(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
+      let responseData: any
 
-      if (!response.ok) {
-        const err = await response.json()
-        throw new Error(err.error?.message || 'Text analysis failed')
-      }
+      if (this.provider === 'openrouter') {
+        // --- OpenRouter Format ---
+        const content: any[] = []
 
-      const data = await response.json()
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-
-      // Attempt JSON Parse
-      try {
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[1] || jsonMatch[0])
+        // Add images first if present
+        if (images && images.length > 0) {
+          for (const img of images) {
+            content.push({
+              type: 'image_url',
+              image_url: { url: img }
+            })
+          }
         }
-        return JSON.parse(text)
-      } catch (e) {
-        console.warn('Failed to parse JSON from AI response, returning raw text', text)
-        return text
+
+        // Add text prompt
+        content.push({ type: 'text', text: fullPrompt })
+
+        const requestBody = {
+          model: this.normalizeModelName(targetModel),
+          messages: [{ role: 'user', content }],
+          temperature: 0.7,
+          top_p: 0.95
+        }
+
+        const response = await fetch(this.getEndpointForModel(targetModel), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`,
+            'HTTP-Referer': 'http://localhost:5173',
+            'X-Title': encodeURIComponent(APP_CONFIG.appName)
+          },
+          body: JSON.stringify(requestBody)
+        })
+
+        if (!response.ok) {
+          const err = await response.json()
+          throw new Error(err.error?.message || 'Text analysis failed')
+        }
+
+        responseData = await response.json()
+        const text = responseData.choices?.[0]?.message?.content || ''
+
+        // Extract text from array content if needed
+        let textContent = ''
+        if (Array.isArray(text)) {
+          for (const part of text) {
+            if (part.type === 'text' && part.text) {
+              textContent += part.text
+            }
+          }
+        } else {
+          textContent = text
+        }
+
+        // Attempt JSON Parse with safety checks
+        try {
+          // Try to extract JSON from code blocks first
+          const codeBlockMatch = textContent.match(/```json\n([\s\S]*?)\n```/)
+          if (codeBlockMatch && codeBlockMatch[1]) {
+            try {
+              return JSON.parse(codeBlockMatch[1])
+            } catch (e) {
+              console.warn('Failed to parse JSON from code block, trying other methods')
+            }
+          }
+
+          // Try to match raw JSON object
+          const jsonObjectMatch = textContent.match(/\{[\s\S]*\}/)
+          if (jsonObjectMatch && jsonObjectMatch[0]) {
+            try {
+              return JSON.parse(jsonObjectMatch[0])
+            } catch (e) {
+              console.warn('Failed to parse raw JSON object, trying full text')
+            }
+          }
+
+          // Try to parse entire content as JSON
+          return JSON.parse(textContent)
+        } catch (e) {
+          console.warn('Failed to parse JSON from AI response, returning raw text', textContent.substring(0, 200))
+          return textContent
+        }
+
+      } else {
+        // --- Google Native Format ---
+        const payload: any = {
+          contents: [{
+            parts: [{ text: fullPrompt }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+          }
+        }
+
+        // Add images if present
+        if (images && images.length > 0) {
+          const parts = []
+          for (const img of images) {
+            const base64Data = img.replace(/^data:image\/\w+;base64,/, '')
+            parts.push({
+              inlineData: {
+                mimeType: 'image/jpeg',
+                data: base64Data
+              }
+            })
+          }
+          parts.push({ text: fullPrompt })
+          payload.contents[0].parts = parts
+        }
+
+        const response = await fetch(this.getEndpointForModel(targetModel), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+
+        if (!response.ok) {
+          const err = await response.json()
+          throw new Error(err.error?.message || 'Text analysis failed')
+        }
+
+        responseData = await response.json()
+        const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || ''
+
+        // Attempt JSON Parse with safety checks
+        try {
+          // Try to extract JSON from code blocks first
+          const codeBlockMatch = text.match(/```json\n([\s\S]*?)\n```/)
+          if (codeBlockMatch && codeBlockMatch[1]) {
+            try {
+              return JSON.parse(codeBlockMatch[1])
+            } catch (e) {
+              console.warn('Failed to parse JSON from code block, trying other methods')
+            }
+          }
+
+          // Try to match raw JSON object
+          const jsonObjectMatch = text.match(/\{[\s\S]*\}/)
+          if (jsonObjectMatch && jsonObjectMatch[0]) {
+            try {
+              return JSON.parse(jsonObjectMatch[0])
+            } catch (e) {
+              console.warn('Failed to parse raw JSON object, trying full text')
+            }
+          }
+
+          // Try to parse entire content as JSON
+          return JSON.parse(text)
+        } catch (e) {
+          console.warn('Failed to parse JSON from AI response, returning raw text', text.substring(0, 200))
+          return text
+        }
       }
 
     } catch (error) {
@@ -270,6 +425,8 @@ export class GeminiClient {
       throw new Error('API Key 未配置')
     }
 
+    const targetModel = this.generationModel // Use local variable
+
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
@@ -278,10 +435,10 @@ export class GeminiClient {
 
       if (this.provider === 'openrouter') {
         // --- OpenRouter Logic ---
-        responseData = await this.generateOpenRouter(options, controller.signal)
+        responseData = await this.generateOpenRouter(options, targetModel, controller.signal)
       } else {
         // --- Google Native Logic ---
-        responseData = await this.generateGoogle(options, controller.signal)
+        responseData = await this.generateGoogle(options, targetModel, controller.signal)
       }
 
       clearTimeout(timeoutId)
@@ -296,7 +453,7 @@ export class GeminiClient {
     }
   }
 
-  private async generateOpenRouter(options: GenerateImageOptions, signal: AbortSignal) {
+  private async generateOpenRouter(options: GenerateImageOptions, model: string, signal: AbortSignal) {
     const { prompt, referenceImages } = options
     const messages: any[] = []
 
@@ -313,8 +470,10 @@ export class GeminiClient {
 
     messages.push({ role: 'user', content })
 
+    console.log(`[GeminiClient] generateOpenRouter using generationModel: ${model}`)
+
     const requestBody = {
-      model: this.model,
+      model: this.normalizeModelName(model),
       messages: messages,
       temperature: 1.0,
       top_p: 0.95,
@@ -322,7 +481,7 @@ export class GeminiClient {
       modalities: ['text', 'image']
     }
 
-    const response = await fetch(this.getEndpoint(), {
+    const response = await fetch(this.getEndpointForModel(model), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -342,7 +501,7 @@ export class GeminiClient {
     return await response.json()
   }
 
-  private async generateGoogle(options: GenerateImageOptions, signal: AbortSignal) {
+  private async generateGoogle(options: GenerateImageOptions, model: string, signal: AbortSignal) {
     const { prompt, referenceImages } = options
     const parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> = []
 
@@ -367,10 +526,18 @@ export class GeminiClient {
         temperature: 1.0,
         topP: 0.95,
         topK: 40
-      }
+      },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
+      ]
     }
 
-    const response = await fetch(this.getEndpoint(), {
+    console.log(`[GeminiClient] generateGoogle using generationModel: ${model}`)
+
+    const response = await fetch(this.getEndpointForModel(model), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
@@ -535,32 +702,72 @@ export class GeminiClient {
     return heights[ratio] || 1024
   }
 
-  // Keep batch support
+  // Batch generation with concurrency control
   async generateBatch(
     options: GenerateImageOptions,
     quantity: number,
     onProgress?: (current: number, total: number) => void
   ): Promise<GenerationResult[]> {
+    const CONCURRENCY_LIMIT = 4 // Process 4 images concurrently
     const allResults: GenerationResult[] = []
     const errors: string[] = []
+    let completed = 0
 
-    for (let i = 0; i < quantity; i++) {
-      onProgress?.(i + 1, quantity)
-      try {
-        const results = await this.generateImage(options)
-        allResults.push(...results)
-      } catch (error) {
-        console.error(`Batch generation error ${i + 1}:`, error)
-        errors.push(error instanceof Error ? error.message : 'Unknown error')
+    // Create task queue
+    const queue = Array.from({ length: quantity }, (_, i) => i)
+
+    // Worker function that processes tasks from the queue
+    const worker = async (): Promise<void> => {
+      while (queue.length > 0) {
+        // 检查是否已经收集够数量的图片
+        if (allResults.length >= quantity) {
+          break
+        }
+
+        const index = queue.shift()
+        if (index === undefined) break
+
+        try {
+          const results = await this.generateImage(options)
+          // 只取需要的数量，避免超出请求的数量
+          const remaining = quantity - allResults.length
+          const toAdd = results.slice(0, remaining)
+          allResults.push(...toAdd)
+
+          console.log(`Batch: API returned ${results.length} images, added ${toAdd.length}, total now ${allResults.length}/${quantity}`)
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+          console.error(`Batch generation error ${index + 1}:`, errorMsg)
+          errors.push(errorMsg)
+        }
+
+        completed++
+        onProgress?.(completed, quantity)
+
+        // Add small delay to avoid rate limiting
+        if (queue.length > 0 && allResults.length < quantity) {
+          await this.delay(200)
+        }
       }
-      if (i < quantity - 1) await this.delay(500)
     }
+
+    // Create worker pool with concurrency limit
+    const workers = Array.from({ length: Math.min(CONCURRENCY_LIMIT, quantity) }, () => worker())
+
+    // Wait for all workers to complete
+    await Promise.allSettled(workers)
 
     if (allResults.length === 0 && errors.length > 0) {
       throw new Error(`生成失败: ${errors[0]}`)
     }
 
-    return allResults
+    // 确保只返回请求的数量
+    const finalResults = allResults.slice(0, quantity)
+
+    // Log performance summary
+    console.log(`Batch generation completed: ${finalResults.length}/${quantity} succeeded, ${errors.length} failed`)
+
+    return finalResults
   }
 
   private delay(ms: number): Promise<void> {

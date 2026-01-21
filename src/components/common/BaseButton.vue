@@ -6,6 +6,8 @@ interface Props {
   loading?: boolean
   block?: boolean
   type?: 'button' | 'submit' | 'reset'
+  ariaLabel?: string
+  ariaDescribedby?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,6 +34,10 @@ const handleClick = (event: MouseEvent) => {
   <button
     :type="type"
     :disabled="disabled || loading"
+    :aria-label="ariaLabel"
+    :aria-describedby="ariaDescribedby"
+    :aria-disabled="disabled || loading"
+    :aria-busy="loading"
     :class="[
       'base-button',
       `base-button--${variant}`,
@@ -44,10 +50,11 @@ const handleClick = (event: MouseEvent) => {
     ]"
     @click="handleClick"
   >
-    <span v-if="loading" class="base-button__spinner"></span>
+    <span v-if="loading" class="base-button__spinner" aria-hidden="true"></span>
     <span class="base-button__content" :class="{ 'base-button__content--hidden': loading }">
       <slot></slot>
     </span>
+    <span v-if="loading" class="sr-only">Loading...</span>
   </button>
 </template>
 

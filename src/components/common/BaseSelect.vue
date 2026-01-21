@@ -138,4 +138,25 @@ const hasError = computed(() => !!props.error)
   color: var(--color-danger, #ef4444);
   margin: 0;
 }
+
+/* Mobile Optimization */
+@media (max-width: 640px) {
+  .base-select {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 0.75rem 2.5rem 0.75rem 1rem; /* Larger padding */
+    min-height: 48px; /* Larger touch target */
+  }
+
+  .base-select__label {
+    font-size: 0.9375rem;
+  }
+
+  .base-select__error {
+    font-size: 0.875rem;
+  }
+
+  .base-select__arrow {
+    right: 1rem;
+  }
+}
 </style>

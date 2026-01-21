@@ -148,4 +148,26 @@ const charCount = computed(() => props.modelValue.length)
   color: var(--color-text-muted, #9ca3af);
   margin-left: auto;
 }
+
+/* Mobile Optimization */
+@media (max-width: 640px) {
+  .base-textarea {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 0.75rem 1rem; /* Larger padding */
+    min-height: 120px; /* Ensure sufficient height */
+  }
+
+  .base-textarea__label {
+    font-size: 0.9375rem;
+  }
+
+  .base-textarea__error,
+  .base-textarea__hint {
+    font-size: 0.875rem;
+  }
+
+  .base-textarea__count {
+    font-size: 0.8125rem;
+  }
+}
 </style>
