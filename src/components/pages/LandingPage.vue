@@ -4,7 +4,7 @@ import luxuryImg from '@/assets/demo/luxury.png'
 import sneakerImg from '@/assets/demo/sneaker.png'
 import coffeeImg from '@/assets/demo/coffee.png'
 
-const emit = defineEmits<{
+defineEmits<{
   'start': [mode: 'quick']
 }>()
 </script>

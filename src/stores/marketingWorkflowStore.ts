@@ -245,16 +245,19 @@ export const useMarketingWorkflowStore = defineStore('marketingWorkflow', () => 
                 }
             }
 
-            // Run Director Agent
+            // Run Director Agent (Cast result data to expected type)
             const result = await orchestrator.runAgent(directorAgent, context)
 
             if (!result.success || !result.data) {
                 throw new Error(result.error || 'Failed to analyze product')
             }
 
+            // Explicitly cast data to expected structure to fix TS access errors
+            const data = result.data as any
+
             // Save results
-            productAnalysis.value = result.data.analysis
-            marketingRoutes.value = result.data.routes
+            productAnalysis.value = data.analysis
+            marketingRoutes.value = data.routes
 
             addThought('System', `Analysis complete. Generated ${marketingRoutes.value.length} marketing routes.`)
 
@@ -295,7 +298,7 @@ export const useMarketingWorkflowStore = defineStore('marketingWorkflow', () => 
             if (!result.success || !result.data) {
                 addThought('System', 'Strategy review failed, but continuing...')
             } else {
-                const feedback = result.data
+                const feedback = result.data as any
                 addThought('Critic', `${feedback.critique} (Score: ${feedback.score}/100)`)
 
                 if (!feedback.approved && feedback.score < 60) {
@@ -353,8 +356,8 @@ export const useMarketingWorkflowStore = defineStore('marketingWorkflow', () => 
                 throw new Error(result.error || 'Failed to generate content plan')
             }
 
-            // Save result
-            contentPlan.value = result.data
+            // Save result (Explicit cast)
+            contentPlan.value = result.data as ContentPlan
             addThought('System', `Content plan generated: ${contentPlan.value.items.length} items ready.`)
 
             // Move to generation step

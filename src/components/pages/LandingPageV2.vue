@@ -6,7 +6,7 @@ import coffeeImg from '@/assets/demo/coffee.png'
 import brainImg from '@/assets/demo/brain.png'
 import { BaseButton } from '@/components/common'
 
-const emit = defineEmits<{
+defineEmits<{
   'enter': []
 }>()
 
