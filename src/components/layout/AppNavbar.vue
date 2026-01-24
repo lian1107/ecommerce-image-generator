@@ -11,11 +11,16 @@ defineProps<{
 
 const emit = defineEmits<{
   'open-settings': [],
+  'open-help': [],
   'switch-mode': [mode: 'landing' | 'quick' | 'advanced' | 'marketing']
 }>()
 
 const openSettings = () => {
   emit('open-settings')
+}
+
+const openHelp = () => {
+  emit('open-help')
 }
 
 const connectionStatusClass = computed(() => ({
@@ -62,13 +67,23 @@ const navItems = [
         <span class="navbar__status-text" v-else>Disconnected</span>
       </div>
       
-      <BaseButton 
-        variant="secondary" 
-        size="sm" 
+      <BaseButton
+        variant="secondary"
+        size="sm"
         @click="openSettings"
       >
         <span>⚙️</span>
         System Settings
+      </BaseButton>
+
+      <BaseButton
+        variant="ghost"
+        size="sm"
+        @click="openHelp"
+        class="help-btn"
+      >
+        <span>❓</span>
+        帮助
       </BaseButton>
     </div>
   </nav>
@@ -202,6 +217,31 @@ const navItems = [
 @media (max-width: 850px) {
   .navbar__title {
       display: none;
+  }
+}
+
+/* 移动端样式优化 - 隐藏中间标签和右侧操作按钮 */
+@media (max-width: 640px) {
+  .navbar {
+    justify-content: center;
+    padding: 0 1rem;
+  }
+
+  .navbar__brand {
+    min-width: auto;
+  }
+
+  .navbar__title {
+    display: block;
+    font-size: 1rem;
+  }
+
+  .navbar__center {
+    display: none;
+  }
+
+  .navbar__actions {
+    display: none;
   }
 }
 </style>

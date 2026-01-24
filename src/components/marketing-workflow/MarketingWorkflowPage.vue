@@ -145,4 +145,86 @@ init()
     display: flex;
     gap: 1rem;
 }
+
+/* ========================================
+   移动端样式 - 单栏堆叠布局
+   ======================================== */
+@media (max-width: 640px) {
+  .marketing-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100%;
+    gap: 1rem;
+    padding: 0;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.75rem;
+    order: 1; /* 步骤在上 */
+  }
+
+  .sidebar-section {
+    gap: 0.5rem;
+  }
+
+  .sidebar-section.flex-grow {
+    flex: none;
+    min-height: auto;
+    order: 3; /* 日志在最下方 */
+  }
+
+  .sidebar-title {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .main-content {
+    order: 2; /* 内容在中间 */
+    flex: none;
+    min-height: 50vh;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin: 0;
+  }
+
+  .step-container {
+    padding: 0;
+  }
+
+  .empty-state {
+    min-height: 200px;
+    height: auto;
+  }
+
+  .empty-icon {
+    font-size: 2rem;
+  }
+
+  .debug-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .debug-actions button {
+    width: 100%;
+  }
+}
+
+/* 平板端样式 */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .marketing-page {
+    gap: 1rem;
+  }
+
+  .sidebar {
+    width: 220px;
+  }
+
+  .main-content {
+    padding: 1.25rem;
+  }
+}
 </style>

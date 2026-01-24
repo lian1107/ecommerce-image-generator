@@ -22,8 +22,11 @@ export const useProductStore = defineStore('product', () => {
   const isAnalyzing = ref(false)
 
   // Getters
+  // 判断是否有足够的产品信息用于场景推荐
+  // 条件：有产品名称 或 有图片且AI分析出了类别
   const hasProduct = computed(() =>
-    productInfo.value.name.trim().length > 0
+    productInfo.value.name.trim().length > 0 ||
+    (uploadedImages.value.length > 0 && productInfo.value.category.trim().length > 0)
   )
 
   const hasImages = computed(() =>
@@ -163,6 +166,9 @@ export const useProductStore = defineStore('product', () => {
         productInfo.value.features = []
         productInfo.value.materialPrompts = []
         productInfo.value.colorPalette = []
+        productInfo.value.sceneDescriptions = undefined // [P0] Reset scene descriptions
+        productInfo.value.sizeCategory = undefined      // [NEW] Reset size category
+        productInfo.value.sizeReference = undefined     // [NEW] Reset size reference
         productInfo.value.category = '' // Reset category as it's image-dependent
         // We keep name/description/brand as they might be user-entered
       }
@@ -234,14 +240,21 @@ export const useProductStore = defineStore('product', () => {
           productInfo.value.features.push(...newFeatures)
         }
 
-        // 3. 材质 Prompt
-        productInfo.value.materialPrompts = insight.generatedPrompts
+        // 3. 材质 Prompt - 只使用第一个（最好的）prompt，避免重复描述
+        // AI 可能生成多个版本，但我们只需要最优的一个
+        productInfo.value.materialPrompts = insight.generatedPrompts.slice(0, 1)
 
         // 4. [NEW] 颜色面板 (Fix Color Accuracy)
         productInfo.value.colorPalette = insight.colorPalette
 
-        // 4. 保存完整 Insight (可选，用于 UI 展示)
-        // 可以在这里扩展 productInfo interface 来存储更多 insight 信息
+        // 5. [NEW] 场景特定描述 (Scene-Aware Descriptions)
+        // 为每个场景生成针对性的产品描述，避免"一刀切"的描述问题
+        productInfo.value.sceneDescriptions = insight.sceneDescriptions
+
+        // 6. [NEW] 产品尺寸信息 (Product Size for Scale Control)
+        // 用于在 lifestyle 等场景中保持真实的产品比例
+        productInfo.value.sizeCategory = insight.sizeCategory
+        productInfo.value.sizeReference = insight.sizeReference
       }
 
     } catch (error) {

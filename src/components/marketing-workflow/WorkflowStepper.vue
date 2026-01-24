@@ -131,4 +131,97 @@ const currentStepIndex = computed(() => {
 .step-item.completed .step-line {
   background: var(--color-success);
 }
+
+/* ========================================
+   移动端样式 - 水平紧凑步骤条
+   ======================================== */
+@media (max-width: 640px) {
+  .workflow-stepper {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .step-item {
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 0;
+    padding-right: 0;
+    flex: 1;
+    min-width: 60px;
+    text-align: center;
+  }
+
+  .step-item:last-child {
+    padding-right: 0;
+  }
+
+  .step-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .step-label {
+    margin-left: 0;
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+
+  .label-text {
+    /* 隐藏序号，只显示名称 */
+    display: block;
+  }
+
+  /* 隐藏竖向连接线，改为水平 */
+  .step-line {
+    display: none;
+  }
+
+  /* 用伪元素创建水平连接线 */
+  .step-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: calc(50% + 20px);
+    right: -50%;
+    height: 2px;
+    background: var(--color-border-light);
+    z-index: 1;
+  }
+
+  .step-item.completed:not(:last-child)::after {
+    background: var(--color-success);
+  }
+
+  .step-item.active .step-icon {
+    box-shadow: 0 0 0 3px var(--color-primary-dim);
+  }
+}
+
+/* 平板端调整 */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .step-item {
+    padding-bottom: 1.5rem;
+  }
+
+  .step-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 0.75rem;
+  }
+
+  .step-label {
+    font-size: 0.8rem;
+  }
+
+  .step-line {
+    left: 12px;
+    top: 24px;
+  }
+}
 </style>

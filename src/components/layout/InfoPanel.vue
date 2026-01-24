@@ -129,4 +129,69 @@ defineExpose({
 .info-panel__content::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted, #9ca3af);
 }
+
+/* ========================================
+   移动端样式 - 右侧滑入全屏面板
+   ======================================== */
+@media (max-width: 640px) {
+  .info-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 100%;
+    border-left: none;
+    z-index: 101;
+    background: var(--color-bg, #f9fafb);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .info-panel.open {
+    transform: translateX(0);
+  }
+
+  .info-panel--collapsed {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  .info-panel__toggle {
+    display: none; /* 移动端隐藏折叠按钮，使用FAB代替 */
+  }
+
+  .info-panel__content {
+    padding: 1rem;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* 平板端样式 - 侧边栏滑入 */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .info-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 320px !important;
+    min-width: 320px !important;
+    z-index: 50;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.1);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .info-panel.open {
+    transform: translateX(0);
+  }
+
+  .info-panel__toggle {
+    display: none;
+  }
+}
 </style>

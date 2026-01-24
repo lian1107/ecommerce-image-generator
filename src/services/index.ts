@@ -1,3 +1,5 @@
 export * from './geminiClient'
 export * from './semanticEngine'
 export * from './promptBuilder'
+export * from './productInsightEngine'
+export * from './sceneRecommender'

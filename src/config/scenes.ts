@@ -12,13 +12,9 @@ export const scenes: Record<SceneType, Scene> = {
       style: 'commercial'
     },
     promptHints: [
-      'pure white background',
-      'professional studio lighting',
-      'product photography',
-      'clean and minimal',
-      'high-end e-commerce style',
-      'soft shadows',
-      'centered composition'
+      'a pure white seamless background creating clean e-commerce presentation',
+      'professional three-point studio lighting that creates soft diffused highlights',
+      'centered composition at a slightly elevated angle showcasing product clearly'
     ],
     tags: ['电商主图', '白底图', '产品展示']
   },
@@ -33,13 +29,11 @@ export const scenes: Record<SceneType, Scene> = {
       style: 'realistic'
     },
     promptHints: [
-      'lifestyle photography',
-      'natural home environment',
-      'warm and inviting atmosphere',
-      'realistic setting',
-      'product in use context',
-      'natural daylight',
-      'cozy interior'
+      'a warm and inviting natural home environment with authentic lifestyle context',
+      'soft natural daylight streaming through windows creating gentle ambient lighting',
+      'lifestyle composition showing the product in realistic everyday use',
+      'cozy interior setting with complementary decor elements and natural textures',
+      'product shown at realistic scale proportional to surrounding furniture and environment'
     ],
     tags: ['场景图', '生活方式', '氛围感']
   },
@@ -54,13 +48,11 @@ export const scenes: Record<SceneType, Scene> = {
       style: 'realistic'
     },
     promptHints: [
-      'outdoor photography',
-      'natural environment',
-      'adventure lifestyle',
-      'nature background',
-      'dynamic outdoor setting',
-      'golden hour lighting',
-      'scenic backdrop'
+      'a dynamic natural outdoor environment with scenic nature backdrop',
+      'golden hour lighting with warm natural sunlight creating dramatic atmosphere',
+      'adventure lifestyle composition emphasizing product in action context',
+      'sharp focus on product with natural depth of field and environmental storytelling',
+      'product displayed at true-to-life scale within the natural outdoor setting'
     ],
     tags: ['户外', '运动', '自然']
   },
@@ -75,13 +67,11 @@ export const scenes: Record<SceneType, Scene> = {
       style: 'artistic'
     },
     promptHints: [
-      'festive atmosphere',
-      'holiday decorations',
-      'celebration mood',
-      'seasonal elements',
-      'warm holiday lighting',
-      'gift-giving context',
-      'special occasion'
+      'a festive atmosphere with seasonal decorations and celebration elements',
+      'warm holiday lighting creating magical ambiance and special occasion mood',
+      'gift-giving context with elegant seasonal styling and holiday themes',
+      'dramatic composition emphasizing the joy and spirit of the celebration',
+      'product presented at appropriate scale relative to holiday decorations and setting'
     ],
     tags: ['节日', '促销', '活动']
   },
@@ -97,13 +87,10 @@ export const scenes: Record<SceneType, Scene> = {
       quality: 'ultra'
     },
     promptHints: [
-      'luxury product photography',
-      'premium aesthetic',
-      'elegant composition',
-      'sophisticated lighting',
-      'high-end materials texture',
-      'refined and exclusive',
-      'opulent atmosphere'
+      'an elegant dark gradient background with subtle reflections emphasizing luxury',
+      'dramatic rim lighting highlighting premium materials and craftsmanship textures',
+      'sophisticated composition conveying exclusivity and refined aesthetic',
+      'opulent atmosphere capturing every luxurious detail'
     ],
     tags: ['高端', '奢侈品', '品质感']
   },
@@ -118,13 +105,10 @@ export const scenes: Record<SceneType, Scene> = {
       style: 'commercial'
     },
     promptHints: [
-      'minimalist design',
-      'clean aesthetic',
-      'simple composition',
-      'negative space',
-      'modern and sleek',
-      'subtle shadows',
-      'geometric simplicity'
+      'a minimalist design with clean aesthetic and generous negative space',
+      'simple composition with geometric simplicity emphasizing modern elegance',
+      'soft diffused lighting creating subtle shadows without distraction',
+      'modern and sleek presentation focusing entirely on product form and function'
     ],
     tags: ['极简', '现代', '简约']
   }

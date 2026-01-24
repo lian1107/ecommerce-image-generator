@@ -14,7 +14,8 @@
   --color-primary: #da7756;
   --color-primary-light: rgba(218, 119, 86, 0.1);
   --color-primary-dark: #b85d3f;
-  --color-accent: #2d2a26; /* Deep Charcoal for strong actions */
+  --color-accent: #2d2a26;
+  /* Deep Charcoal for strong actions */
 
   /* 次要颜色 */
   --color-secondary: #6e6962;
@@ -42,13 +43,16 @@
   --color-info-text: #264b8a;
 
   /* 文本颜色 */
-  --color-text: #3c3935; /* Soft Black */
+  --color-text: #3c3935;
+  /* Soft Black */
   --color-text-dark: #1a1918;
   --color-text-muted: #858079;
 
   /* 背景颜色 (Warm Paper) */
-  --color-bg: #fbf9f6; /* Claude-like paper background */
-  --color-bg-card: #ffffff; /* Clean white cards */
+  --color-bg: #fbf9f6;
+  /* Claude-like paper background */
+  --color-bg-card: #ffffff;
+  /* Clean white cards */
   --color-bg-secondary: #f0ede8;
   --color-bg-hover: #f2f0eb;
   --color-bg-input: #ffffff;
@@ -75,7 +79,8 @@
 
   /* 字体 */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Merriweather', Georgia, serif; /* New serif font */
+  --font-serif: 'Merriweather', Georgia, serif;
+  /* New serif font */
   --font-mono: 'SF Mono', Monaco, monospace;
 }
 
@@ -86,7 +91,8 @@
     --color-text-dark: #fbf9f6;
     --color-text-muted: #9e9a94;
 
-    --color-bg: #1c1b1a; /* Warm black */
+    --color-bg: #1c1b1a;
+    /* Warm black */
     --color-bg-card: #282624;
     --color-bg-secondary: #33302e;
     --color-bg-hover: #33302e;
@@ -116,23 +122,37 @@ html {
 
 body {
   font-family: var(--font-sans);
-  font-size: 0.95rem; /* Slightly smaller, more refined */
+  font-size: 0.95rem;
+  /* Slightly smaller, more refined */
   line-height: 1.6;
   color: var(--color-text);
   background-color: var(--color-bg);
 }
 
 /* Typography Overrides */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-serif);
   color: var(--color-text-dark);
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: 2rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
 
 /* 链接 */
 a {
@@ -186,12 +206,12 @@ ol {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.1);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0,0,0,0.2);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* 选中文本 */
@@ -227,13 +247,25 @@ ol {
 
 /* 动画 */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Vue 过渡动画 */
@@ -248,15 +280,41 @@ ol {
 }
 
 /* 布局工具类 */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.gap-1 { gap: 0.25rem; }
-.gap-2 { gap: 0.5rem; }
-.gap-3 { gap: 0.75rem; }
-.gap-4 { gap: 1rem; }
+.flex {
+  display: flex;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
 
 /* 应用容器 */
 #app {

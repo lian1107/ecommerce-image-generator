@@ -422,4 +422,104 @@ h2 {
         flex-direction: column;
     }
 }
+
+/* ========================================
+   移动端样式 (< 640px)
+   ======================================== */
+@media (max-width: 640px) {
+    .step-content {
+        padding: 0;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+    }
+
+    .reference-library {
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .category-section {
+        padding: 0.75rem;
+    }
+
+    .category-header {
+        gap: 0.25rem;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .category-icon {
+        font-size: 1rem;
+    }
+
+    .category-name {
+        font-size: 0.8rem;
+    }
+
+    .add-btn {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+    }
+
+    .image-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.375rem;
+    }
+
+    .image-grid.grid-large {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .remove-btn {
+        opacity: 1; /* 移动端始终显示删除按钮 */
+        width: 20px;
+        height: 20px;
+    }
+
+    .empty-slot {
+        padding: 0.75rem;
+    }
+
+    .empty-icon {
+        font-size: 1.25rem;
+    }
+
+    .empty-text {
+        font-size: 0.7rem;
+    }
+
+    .info-section {
+        padding: 1rem;
+    }
+
+    .form-group label {
+        font-size: 0.8rem;
+    }
+
+    .base-input {
+        padding: 0.625rem;
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+
+    .action-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+        padding-top: 0.75rem;
+    }
+
+    .validation-hint {
+        font-size: 0.8rem;
+        text-align: center;
+    }
+}
 </style>

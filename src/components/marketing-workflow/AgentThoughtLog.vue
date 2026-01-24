@@ -147,4 +147,50 @@ const formatTime = (ts: number) => {
   50% { opacity: 1; }
   100% { opacity: 0.5; }
 }
+
+/* ========================================
+   移动端样式 - 紧凑可折叠日志
+   ======================================== */
+@media (max-width: 640px) {
+  .agent-log {
+    min-height: 120px;
+    max-height: 180px;
+    font-size: 0.75rem;
+  }
+
+  .agent-log__header {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .agent-log__title {
+    font-size: 0.7rem;
+  }
+
+  .agent-log__content {
+    padding: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .log-entry {
+    padding: 3px 0;
+  }
+
+  .log-entry__meta {
+    font-size: 0.65rem;
+    gap: 4px;
+  }
+
+  .log-entry__message {
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+}
+
+/* 平板端调整 */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .agent-log {
+    min-height: 150px;
+    font-size: 0.8rem;
+  }
+}
 </style>

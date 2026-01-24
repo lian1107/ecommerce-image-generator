@@ -145,4 +145,60 @@ defineExpose({
 .control-panel__content::-webkit-scrollbar-thumb:hover {
   background: rgba(0,0,0,0.15);
 }
+
+/* ========================================
+   移动端样式 - 底部抽屉面板
+   ======================================== */
+@media (max-width: 640px) {
+  .control-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto;
+    max-height: 75vh;
+    border-right: none;
+    border-radius: 1rem 1rem 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .control-panel.open {
+    transform: translateY(0);
+  }
+
+  .control-panel--collapsed {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+
+  .control-panel__toggle {
+    display: none; /* 移动端隐藏折叠按钮，使用FAB代替 */
+  }
+
+  .control-panel__content {
+    max-height: calc(75vh - 2rem);
+    padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+
+  /* 添加顶部拖拽指示条 */
+  .control-panel::before {
+    content: '';
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background: var(--color-border, #d1d5db);
+    border-radius: 2px;
+  }
+}
 </style>

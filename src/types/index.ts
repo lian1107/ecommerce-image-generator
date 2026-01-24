@@ -32,6 +32,19 @@ export interface MaterialAnalysisResult {
   suggestedPrompts: string[]                     // 建议的视觉描述 prompt
 }
 
+// 场景特定描述类型（与 productInsightEngine 保持一致）
+export interface SceneDescriptions {
+  'studio-white': string
+  'lifestyle': string
+  'outdoor': string
+  'seasonal': string
+  'luxury': string
+  'minimalist': string
+}
+
+// [NEW] 产品尺寸类别 - 用于比例控制
+export type ProductSizeCategory = 'pocket' | 'palm' | 'handheld' | 'tabletop' | 'desktop' | 'furniture' | 'large'
+
 // 产品相关类型
 export interface ProductInfo {
   name: string
@@ -42,7 +55,10 @@ export interface ProductInfo {
   brand: string
   style: string
   colorPalette?: string[]    // [NEW] 产品主要颜色
-  materialPrompts?: string[] // AI 分析的材质提示词
+  materialPrompts?: string[] // AI 分析的材质提示词（通用版本）
+  sceneDescriptions?: SceneDescriptions // [NEW] 场景特定的产品描述
+  sizeCategory?: ProductSizeCategory    // [NEW] 产品尺寸类别
+  sizeReference?: string                // [NEW] 尺寸参照描述
 }
 
 export interface UploadedImage {
